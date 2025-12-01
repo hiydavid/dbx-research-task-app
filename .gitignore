@@ -1,0 +1,6 @@
+
+.databricks
+.venv
+.env
+.env.local
+.vscode
