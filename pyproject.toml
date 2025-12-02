@@ -14,6 +14,7 @@ dependencies = [
     "mlflow>=3.6.0",
     "openai-agents>=0.4.1",
     "dotenv",
+    "psycopg2-binary>=2.9.9",
 ]
 
 [build-system]
@@ -33,3 +34,4 @@ dev = [
 [project.scripts]
 start-server = "agent_server.start_server:main"
 agent-evaluate = "agent_server.evaluate_agent:evaluate"
+research-job = "agent_server.research_job:main"

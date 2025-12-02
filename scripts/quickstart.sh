@@ -12,7 +12,7 @@ has_brew() {
 }
 
 echo "==================================================================="
-echo "Agent on Apps - Quickstart Setup"
+echo "Research Task Agent - Quickstart Setup"
 echo "==================================================================="
 echo
 
@@ -40,42 +40,6 @@ else
     fi
     echo "✓ UV installed successfully"
 fi
-
-# Check and install nvm
-if [ -s "$HOME/.nvm/nvm.sh" ]; then
-    echo "✓ nvm is already installed"
-    # Load nvm for current session
-    export NVM_DIR="$HOME/.nvm"
-    [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
-else
-    echo "Installing nvm..."
-    if has_brew; then
-        echo "Using Homebrew to install nvm..."
-        brew install nvm
-        # Create nvm directory
-        mkdir -p ~/.nvm
-        # Add nvm to current session
-        export NVM_DIR="$HOME/.nvm"
-        [ -s "/opt/homebrew/opt/nvm/nvm.sh" ] && \. "/opt/homebrew/opt/nvm/nvm.sh"
-        [ -s "/usr/local/opt/nvm/nvm.sh" ] && \. "/usr/local/opt/nvm/nvm.sh"
-    else
-        echo "Using curl to install nvm..."
-        curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.0/install.sh | bash
-        # Load nvm for current session
-        export NVM_DIR="$HOME/.nvm"
-        [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
-    fi
-    echo "✓ nvm installed successfully"
-fi
-
-# Use Node 20
-echo "Setting up Node.js 20..."
-nvm install 20
-nvm use 20
-echo "✓ Node.js 20 is now active"
-node --version
-npm --version
-echo
 
 # Check and install Databricks CLI
 if command_exists databricks; then
@@ -302,7 +266,7 @@ echo
 
 # Create MLflow experiment and capture the experiment ID
 echo "Creating MLflow experiment..."
-EXPERIMENT_NAME="/Users/$DATABRICKS_USERNAME/agents-on-apps"
+EXPERIMENT_NAME="/Users/$DATABRICKS_USERNAME/research-task-agent"
 
 # Try to create the experiment with the default name first
 if EXPERIMENT_RESPONSE=$(databricks experiments create-experiment $EXPERIMENT_NAME 2>/dev/null); then
@@ -311,7 +275,7 @@ if EXPERIMENT_RESPONSE=$(databricks experiments create-experiment $EXPERIMENT_NA
 else
     echo "Experiment name already exists, creating with random suffix..."
     RANDOM_SUFFIX=$(openssl rand -hex 4)
-    EXPERIMENT_NAME="/Users/$DATABRICKS_USERNAME/agents-on-apps-$RANDOM_SUFFIX"
+    EXPERIMENT_NAME="/Users/$DATABRICKS_USERNAME/research-task-agent-$RANDOM_SUFFIX"
     EXPERIMENT_RESPONSE=$(databricks experiments create-experiment $EXPERIMENT_NAME)
     EXPERIMENT_ID=$(echo $EXPERIMENT_RESPONSE | jq -r .experiment_id)
     echo "Created experiment '$EXPERIMENT_NAME' with ID: $EXPERIMENT_ID"
@@ -340,11 +304,17 @@ echo
 echo "==================================================================="
 echo "Setup Complete!"
 echo "==================================================================="
-echo "✓ Prerequisites installed (UV, nvm, Databricks CLI)"
+echo "✓ Prerequisites installed (UV, Databricks CLI)"
 echo "✓ Databricks authenticated with profile: $PROFILE_NAME"
 echo "✓ Configuration files created (.env.local)"
 echo "✓ MLflow experiment created: $EXPERIMENT_NAME"
 echo "✓ Experiment ID: $EXPERIMENT_ID"
 echo "✓ Configuration updated in .env.local and app.yaml"
 echo "==================================================================="
+echo
+echo "Next steps:"
+echo "  1. Start the agent server: uv run start-server"
+echo "  2. Test with: curl -X POST http://localhost:8000/invocations \\"
+echo "       -H 'Content-Type: application/json' \\"
+echo "       -d '{\"input\": [{\"role\": \"user\", \"content\": \"hi\"}]}'"
 echo
