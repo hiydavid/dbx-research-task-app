@@ -6,7 +6,8 @@ from pathlib import Path
 from typing import List
 
 from agents import Agent, Runner, function_tool
-from agents.mcp import MCPServerStdio, MCPServerStdioParams
+from agents.mcp import MCPServerStdio
+from agents.repl import run_demo_loop
 from pydantic import BaseModel
 
 load_dotenv()
@@ -14,13 +15,6 @@ load_dotenv()
 SANDBOX = os.path.dirname(os.path.abspath(__file__))
 SCRIPT = Path(__file__).with_name("mcp_servers.py").resolve()
 
-research_srv = MCPServerStdio(
-    name="Research Tools",
-    params=MCPServerStdioParams(
-        command="mcp",
-        args=["run", str(SCRIPT)],
-    ),
-)
 thinking_srv = MCPServerStdio(
     name="sequential-thinking",
     params={
@@ -35,6 +29,16 @@ fs_srv = MCPServerStdio(
         "args": ["-y", "@modelcontextprotocol/server-filesystem", SANDBOX],
     },
 )
+tavily_srv = MCPServerStdio(
+    name="Tavily Search",
+    params={
+        "command": "npx",
+        "args": ["-y", "tavily-mcp@latest"],
+        "env": {
+            "TAVILY_API_KEY": os.getenv("TAVILY_API_KEY")
+        }
+    },
+)
 
 
 class ResearchSourcesModel(BaseModel):
@@ -45,19 +49,27 @@ class ResearchSourcesModel(BaseModel):
 @function_tool
 async def research_agent(instructions: str) -> ResearchSourcesModel:
     """
-    Use the research agent to find research sources.
+    Use the research agent to find research sources using web search.
     """
     agent = Agent(
         name="Research Agent",
         instructions="""
-You are a research assistant.
-Your role is to find research sources.
+You are a research assistant with real-time web search capabilities.
+Your role is to find research sources by searching the web using Tavily.
+
+Search Guidelines:
+- Use the 'search' tool with max_results parameter (default: 5, max: 10)
+- Use search_depth 'basic' for quick searches (default)
+- Use search_depth 'advanced' only when you need comprehensive results
+- Limit yourself to 1-3 searches per task to conserve API usage
+
 Never make up or invent any research sources.
+Always provide URLs and citations from your search results.
 """,
         output_type=ResearchSourcesModel,
-        mcp_servers=[research_srv],
+        mcp_servers=[tavily_srv],
     )
-    async with research_srv:
+    async with tavily_srv:
         result = await Runner.run(agent, instructions)
         return result.final_output
 
@@ -95,19 +107,49 @@ Use the filesystem agent to write the output as a text file.
 )
 
 
-async def main():
+async def interactive_chat():
+    """
+    Run an interactive chat loop with the orchestration agent.
+    Type 'exit' or 'quit' to end the session.
+    """
+    print("=" * 60)
+    print("Research Assistant - Interactive Mode")
+    print("=" * 60)
+    print("Ask me to research any topic. I can:")
+    print("  • Search the web for sources")
+    print("  • Create research plans")
+    print("  • Read and update existing research files")
+    print("  • Generate research reports")
+    print("\nType 'exit' or 'quit' to end the session.")
+    print("=" * 60)
+
     async with thinking_srv:
-        goal = """
-Produce a research plan to find the book 'The Hitchhiker's Guide to the Galaxy'
-"""
         orchestration_agent.mcp_servers = [thinking_srv]
-        print("Running...", goal)
-        result = await Runner.run(
-            orchestration_agent,
-            goal,
-            max_turns=25,
-        )
-        print(result.final_output)
+        await run_demo_loop(orchestration_agent, stream=True)
+
+
+async def main():
+    import sys
+
+    # Check if user wants interactive mode
+    if len(sys.argv) > 1 and sys.argv[1] == "--interactive":
+        await interactive_chat()
+    else:
+        # Original single-shot mode
+        async with thinking_srv:
+            goal = """
+Produce a short research report of Nvidia's GPU vs. Google's TPU.
+Output your research plan as a .txt file first, before you conduct your research.
+After you're done with the research, output your research result as a .txt file.
+"""
+            orchestration_agent.mcp_servers = [thinking_srv]
+            print("Running...", goal)
+            result = await Runner.run(
+                orchestration_agent,
+                goal,
+                max_turns=25,
+            )
+            print(result.final_output)
 
 
 if __name__ == "__main__":
