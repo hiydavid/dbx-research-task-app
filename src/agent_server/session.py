@@ -4,7 +4,7 @@ import json
 from datetime import datetime
 from pathlib import Path
 
-from .config import SESSIONS_DIR
+from agent_server.config import SESSIONS_DIR
 
 
 def save_session(conversation_history: list, session_name: str = None) -> Path:

@@ -9,10 +9,16 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+# Project root (3 levels up from config.py: agent_server -> src -> project root)
+PROJECT_ROOT = Path(__file__).parent.parent.parent
+
 # Default paths
-DEFAULT_SANDBOX = os.path.dirname(os.path.abspath(__file__))
-SESSIONS_DIR = Path(__file__).parent / ".sessions"
-LOGS_DIR = Path(__file__).parent / ".logs"
+DEFAULT_SANDBOX = str(PROJECT_ROOT / "output")
+SESSIONS_DIR = PROJECT_ROOT / ".sessions"
+LOGS_DIR = PROJECT_ROOT / ".logs"
+
+# Ensure output directory exists
+Path(DEFAULT_SANDBOX).mkdir(exist_ok=True)
 
 # Global config (set by parse_args)
 CONFIG = {

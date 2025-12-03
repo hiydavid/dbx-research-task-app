@@ -2,7 +2,7 @@
 
 import argparse
 
-from .config import CONFIG, DEFAULT_SANDBOX, LOGS_DIR
+from agent_server.config import CONFIG, DEFAULT_SANDBOX, LOGS_DIR
 
 
 def parse_args() -> argparse.Namespace:

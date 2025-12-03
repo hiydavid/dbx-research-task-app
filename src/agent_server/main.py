@@ -1,10 +1,15 @@
 """Entry point for the Research Assistant Agent."""
 
 import asyncio
+import sys
+from pathlib import Path
 
-from .config import CONFIG
-from .cli import parse_args
-from .chat import interactive_chat
+# Add parent directory to path for direct execution
+sys.path.insert(0, str(Path(__file__).parent.parent))
+
+from agent_server.config import CONFIG
+from agent_server.cli import parse_args
+from agent_server.chat import interactive_chat
 
 
 async def main() -> None:

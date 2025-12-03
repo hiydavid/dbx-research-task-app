@@ -5,19 +5,26 @@ A multi-agent research assistant that orchestrates web searches, sequential thin
 ## Project Structure
 
 ```
-src/agent_server/
-├── __init__.py
-├── main.py              # Entry point
-├── cli.py               # CLI argument parsing and commands
-├── chat.py              # Interactive chat loop
-├── config.py            # Configuration and logging
-├── servers.py           # MCP server definitions
-├── session.py           # Session persistence
-└── agents/
-    ├── __init__.py      # Exports orchestration_agent
-    ├── orchestrator.py  # Top-level coordination agent
-    ├── research.py      # Web search agent (Tavily)
-    └── filesystem.py    # File I/O agent
+dbx-research-task-app/
+├── run.py                   # Entry point (run with VSCode play button)
+├── pyproject.toml
+├── .env                     # API keys (TAVILY_API_KEY, OPENAI_API_KEY)
+├── output/                  # Agent-generated research files
+├── .sessions/               # Saved conversation sessions
+├── .logs/                   # Application logs
+└── src/agent_server/
+    ├── __init__.py
+    ├── main.py              # Main async entry point
+    ├── cli.py               # CLI argument parsing and commands
+    ├── chat.py              # Interactive chat loop
+    ├── config.py            # Configuration and logging
+    ├── servers.py           # MCP server definitions
+    ├── session.py           # Session persistence
+    └── agent_definitions/
+        ├── __init__.py      # Exports orchestration_agent
+        ├── orchestrator.py  # Top-level coordination agent
+        ├── research.py      # Web search agent (Tavily)
+        └── filesystem.py    # File I/O agent
 ```
 
 ## Architecture
@@ -101,10 +108,10 @@ src/agent_server/
 ### MCP Servers (`servers.py`)
 
 - **Sequential Thinking**: `@modelcontextprotocol/server-sequential-thinking`
-- **Filesystem**: `@modelcontextprotocol/server-filesystem` (sandboxed)
+- **Filesystem**: `@modelcontextprotocol/server-filesystem` (sandboxed to `output/`)
 - **Tavily Search**: `tavily-mcp@latest` (requires `TAVILY_API_KEY`)
 
-### Agents (`agents/`)
+### Agents (`agent_definitions/`)
 
 #### Orchestration Agent (`orchestrator.py`)
 
@@ -122,7 +129,7 @@ src/agent_server/
 
 - File I/O operations
 - Output: String
-- Scoped to sandbox directory
+- Scoped to `output/` directory
 
 ## Data Flow
 
@@ -147,14 +154,14 @@ src/agent_server/
 ## Usage
 
 ```bash
-# Run the research assistant
-uv run python -m agent_server
+# Run the research assistant (or press play button in VSCode on run.py)
+python run.py
 
 # With custom output directory
-uv run python -m agent_server --output-dir ./research
+python run.py --output-dir ./my-research
 
 # Resume a previous session
-uv run python -m agent_server --resume 20241201_143022
+python run.py --resume 20241201_143022
 ```
 
 ## Environment Variables

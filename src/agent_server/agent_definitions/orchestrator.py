@@ -2,8 +2,8 @@
 
 from agents import Agent
 
-from .research import research_agent
-from .filesystem import filesystem_agent
+from agent_server.agent_definitions.research import research_agent
+from agent_server.agent_definitions.filesystem import filesystem_agent
 
 
 orchestration_agent = Agent(

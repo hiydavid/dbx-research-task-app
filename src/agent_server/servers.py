@@ -2,9 +2,13 @@
 
 import os
 
+from dotenv import load_dotenv
 from agents.mcp import MCPServerStdio
 
-from .config import DEFAULT_SANDBOX
+from agent_server.config import DEFAULT_SANDBOX
+
+# Load environment variables
+load_dotenv()
 
 # Sequential Thinking MCP Server
 thinking_server = MCPServerStdio(

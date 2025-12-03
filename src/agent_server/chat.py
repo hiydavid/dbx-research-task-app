@@ -6,11 +6,11 @@ from agents import Runner
 from agents.stream_events import RawResponsesStreamEvent, RunItemStreamEvent
 from openai.types.responses import ResponseTextDeltaEvent
 
-from .config import CONFIG, logger
-from .session import save_session, load_session, list_sessions
-from .cli import print_help, print_status
-from .servers import thinking_server
-from .agents import orchestration_agent
+from agent_server.config import CONFIG, logger
+from agent_server.session import save_session, load_session, list_sessions
+from agent_server.cli import print_help, print_status
+from agent_server.servers import thinking_server
+from agent_server.agent_definitions import orchestration_agent
 
 
 async def interactive_chat(resume_session: str = None) -> None:

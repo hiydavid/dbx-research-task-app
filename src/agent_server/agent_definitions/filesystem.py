@@ -2,7 +2,7 @@
 
 from agents import Agent, Runner, function_tool
 
-from ..servers import filesystem_server
+from agent_server.servers import filesystem_server
 
 
 @function_tool

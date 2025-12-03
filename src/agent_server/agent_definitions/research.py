@@ -5,7 +5,7 @@ from typing import List
 from agents import Agent, Runner, function_tool
 from pydantic import BaseModel
 
-from ..servers import tavily_server
+from agent_server.servers import tavily_server
 
 
 class ResearchSourcesModel(BaseModel):
