@@ -2,6 +2,24 @@
 
 A multi-agent research assistant that orchestrates web searches, sequential thinking, and filesystem operations to conduct and document research tasks.
 
+## Project Structure
+
+```
+src/agent_server/
+├── __init__.py
+├── main.py              # Entry point
+├── cli.py               # CLI argument parsing and commands
+├── chat.py              # Interactive chat loop
+├── config.py            # Configuration and logging
+├── servers.py           # MCP server definitions
+├── session.py           # Session persistence
+└── agents/
+    ├── __init__.py      # Exports orchestration_agent
+    ├── orchestrator.py  # Top-level coordination agent
+    ├── research.py      # Web search agent (Tavily)
+    └── filesystem.py    # File I/O agent
+```
+
 ## Architecture
 
 ```
@@ -34,7 +52,6 @@ A multi-agent research assistant that orchestrates web searches, sequential thin
 │   URLs       │  │              │     │                  │
 └──────┬───────┘  └──────┬───────┘     └───────┬──────────┘
        │                 │                     │
-       │                 │                     │
        ▼                 ▼                     ▼
 ┌──────────────┐  ┌──────────────┐     ┌──────────────────┐
 │  Tavily MCP  │  │Filesystem MCP│     │  Sequential      │
@@ -49,47 +66,67 @@ A multi-agent research assistant that orchestrates web searches, sequential thin
 └──────────────┘  └──────────────┘     └──────────────────┘
 ```
 
-### Component Details
+## Module Details
 
-#### Orchestration Agent
-- **Role**: Top-level coordinator and planner
-- **Tools**: `research_agent`, `filesystem_agent`
-- **MCP Servers**: Sequential Thinking
-- **Responsibilities**:
-  - Receives user research goals
-  - Plans research strategy using sequential thinking
-  - Delegates to specialized agents
-  - Synthesizes results
-  - Manages output to filesystem
+### Entry Point (`main.py`)
 
-#### Research Agent
-- **Role**: Web search specialist
-- **Output Type**: `ResearchSourcesModel` (list of sources)
-- **MCP Servers**: Tavily Search
-- **Capabilities**:
-  - Real-time web search via Tavily API
-  - Configurable result count (max 10)
-  - Basic or advanced search depth
-  - Returns verified URLs and citations
+- Parses CLI arguments
+- Initializes configuration
+- Launches interactive chat loop
 
-#### Filesystem Agent
-- **Role**: File I/O operations
-- **Output Type**: String
-- **MCP Servers**: Filesystem
-- **Capabilities**:
-  - Read existing research files
-  - Write research plans and results
-  - Update existing documentation
-  - Scoped to sandbox directory for security
+### CLI (`cli.py`)
 
-#### MCP Servers
-- **Sequential Thinking**: NPX-based server for structured reasoning
-- **Filesystem**: NPX-based server with sandboxed file access
-- **Tavily Search**: NPX-based server requiring API key
+- `--output-dir, -o`: Directory for research output files
+- `--resume, -r`: Resume a previous session by name
+- Slash commands: `/help`, `/clear`, `/status`, `/sessions`, `/save [name]`
 
-### Data Flow
+### Chat Loop (`chat.py`)
 
-1. User provides research goal
+- Interactive REPL with streaming output
+- Manages conversation history
+- Handles tool call progress display
+
+### Configuration (`config.py`)
+
+- Environment loading via `python-dotenv`
+- Logging setup (daily log files in `.logs/`)
+- Global config state
+
+### Session Management (`session.py`)
+
+- Save/load conversation history as JSON
+- Sessions stored in `.sessions/` directory
+- Auto-timestamped session names
+
+### MCP Servers (`servers.py`)
+
+- **Sequential Thinking**: `@modelcontextprotocol/server-sequential-thinking`
+- **Filesystem**: `@modelcontextprotocol/server-filesystem` (sandboxed)
+- **Tavily Search**: `tavily-mcp@latest` (requires `TAVILY_API_KEY`)
+
+### Agents (`agents/`)
+
+#### Orchestration Agent (`orchestrator.py`)
+
+- Top-level coordinator and planner
+- Tools: `research_agent`, `filesystem_agent`
+- MCP Servers: Sequential Thinking (attached at runtime)
+
+#### Research Agent (`research.py`)
+
+- Web search specialist via Tavily
+- Output: `ResearchSourcesModel` (list of URLs)
+- Search guidelines: max 10 results, basic/advanced depth
+
+#### Filesystem Agent (`filesystem.py`)
+
+- File I/O operations
+- Output: String
+- Scoped to sandbox directory
+
+## Data Flow
+
+1. User provides research goal via interactive prompt
 2. Orchestration Agent uses Sequential Thinking to create plan
 3. Orchestration Agent calls Research Agent for web sources
 4. Research Agent uses Tavily to search and returns sources
@@ -99,11 +136,33 @@ A multi-agent research assistant that orchestrates web searches, sequential thin
 8. Orchestration Agent synthesizes final research output
 9. Filesystem Agent writes final results to text file
 
-### Technology Stack
+## Technology Stack
 
 - **Agent Framework**: OpenAI Agents SDK (`openai-agents>=0.6.1`)
 - **MCP Protocol**: Model Context Protocol (`mcp>=1.23.1`)
 - **Data Validation**: Pydantic (`pydantic>=2.12.5`)
 - **Environment**: Python 3.13+
 - **Package Manager**: UV
+
+## Usage
+
+```bash
+# Run the research assistant
+uv run python -m agent_server
+
+# With custom output directory
+uv run python -m agent_server --output-dir ./research
+
+# Resume a previous session
+uv run python -m agent_server --resume 20241201_143022
+```
+
+## Environment Variables
+
+Create a `.env` file:
+
+```bash
+TAVILY_API_KEY=your_tavily_api_key
+OPENAI_API_KEY=your_openai_api_key
+```
 
