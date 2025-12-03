@@ -2,9 +2,10 @@
 
 from typing import List
 
-from agents import Agent, Runner, function_tool
+from agents import Agent, ModelSettings, Runner, function_tool
 from pydantic import BaseModel
 
+from agent_server.config import MODELS
 from agent_server.servers import tavily_server
 
 
@@ -21,6 +22,8 @@ async def research_agent(instructions: str) -> ResearchSourcesModel:
     """
     agent = Agent(
         name="Research Agent",
+        model=MODELS["research"]["model"],
+        model_settings=ModelSettings(temperature=MODELS["research"]["temperature"]),
         instructions="""
 You are a research assistant with real-time web search capabilities.
 Your role is to find research sources by searching the web using Tavily.

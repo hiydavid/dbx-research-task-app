@@ -26,6 +26,23 @@ CONFIG = {
     "session_file": None,
 }
 
+# Model configuration per agent
+# Environment variables override defaults: ORCHESTRATOR_MODEL, RESEARCH_MODEL, FILESYSTEM_MODEL
+MODELS = {
+    "orchestrator": {
+        "model": os.getenv("ORCHESTRATOR_MODEL", "gpt-5.1-2025-11-13"),
+        "temperature": 0.7,
+    },
+    "research": {
+        "model": os.getenv("RESEARCH_MODEL", "gpt-5-mini-2025-08-07"),
+        "temperature": 0.3,
+    },
+    "filesystem": {
+        "model": os.getenv("FILESYSTEM_MODEL", "gpt-5-mini-2025-08-07"),
+        "temperature": 0.0,
+    },
+}
+
 
 def setup_logging() -> logging.Logger:
     """Configure error logging to file."""
@@ -36,7 +53,7 @@ def setup_logging() -> logging.Logger:
         format="%(asctime)s [%(levelname)s] %(message)s",
         handlers=[
             logging.FileHandler(log_file),
-        ]
+        ],
     )
     return logging.getLogger(__name__)
 

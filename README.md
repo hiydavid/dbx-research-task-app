@@ -98,6 +98,7 @@ dbx-research-task-app/
 - Environment loading via `python-dotenv`
 - Logging setup (daily log files in `.logs/`)
 - Global config state
+- Per-agent model configuration (model name, temperature)
 
 ### Session Management (`session.py`)
 
@@ -169,7 +170,13 @@ python run.py --resume 20241201_143022
 Create a `.env` file:
 
 ```bash
+# Required
 TAVILY_API_KEY=your_tavily_api_key
 OPENAI_API_KEY=your_openai_api_key
+
+# Optional: Override default models per agent
+ORCHESTRATOR_MODEL=gpt-4.1          # Default: gpt-4.1
+RESEARCH_MODEL=gpt-4.1-mini         # Default: gpt-4.1-mini
+FILESYSTEM_MODEL=gpt-4.1-mini       # Default: gpt-4.1-mini
 ```
 
