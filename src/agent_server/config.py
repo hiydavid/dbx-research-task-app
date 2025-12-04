@@ -5,9 +5,20 @@ import os
 from datetime import datetime
 from pathlib import Path
 
+import mlflow
+from agents.tracing import set_trace_processors
 from dotenv import load_dotenv
 
 load_dotenv()
+
+# Configure MLflow for Databricks
+mlflow.set_tracking_uri(os.getenv("MLFLOW_TRACKING_URI", "databricks"))
+if experiment_id := os.getenv("MLFLOW_EXPERIMENT_ID"):
+    mlflow.set_experiment(experiment_id=experiment_id)
+
+# Disable OpenAI native tracing, use MLflow instead
+set_trace_processors([])
+mlflow.openai.autolog()
 
 # Project root (3 levels up from config.py: agent_server -> src -> project root)
 PROJECT_ROOT = Path(__file__).parent.parent.parent
@@ -30,16 +41,13 @@ CONFIG = {
 # Environment variables override defaults: ORCHESTRATOR_MODEL, RESEARCH_MODEL, FILESYSTEM_MODEL
 MODELS = {
     "orchestrator": {
-        "model": os.getenv("ORCHESTRATOR_MODEL", "gpt-5.1-2025-11-13"),
-        "temperature": 0.7,
+        "model": os.getenv("ORCHESTRATOR_MODEL", "gpt-4.1"),
     },
     "research": {
-        "model": os.getenv("RESEARCH_MODEL", "gpt-5-mini-2025-08-07"),
-        "temperature": 0.3,
+        "model": os.getenv("RESEARCH_MODEL", "gpt-4.1-mini"),
     },
     "filesystem": {
-        "model": os.getenv("FILESYSTEM_MODEL", "gpt-5-mini-2025-08-07"),
-        "temperature": 0.0,
+        "model": os.getenv("FILESYSTEM_MODEL", "gpt-4.1-mini"),
     },
 }
 

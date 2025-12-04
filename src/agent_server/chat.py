@@ -2,7 +2,9 @@
 
 import traceback
 
+import mlflow
 from agents import Runner
+from mlflow.entities import SpanType
 from agents.stream_events import RawResponsesStreamEvent, RunItemStreamEvent
 from openai.types.responses import ResponseTextDeltaEvent
 
@@ -65,16 +67,22 @@ async def interactive_chat(resume_session: str = None) -> None:
                 # Add user message to conversation
                 conversation_history.append({"role": "user", "content": user_input})
 
-                # Run the agent with streaming
+                # Run the agent with streaming, wrapped in MLflow trace
                 print()  # Newline before response
-                result = Runner.run_streamed(
-                    orchestration_agent,
-                    input=conversation_history,
-                    max_turns=25,
-                )
+                with mlflow.start_span(name="orchestrator_turn", span_type=SpanType.AGENT) as span:
+                    span.set_inputs({"messages": conversation_history})
 
-                # Process stream events
-                await process_stream_events(result)
+                    result = Runner.run_streamed(
+                        orchestration_agent,
+                        input=conversation_history,
+                        max_turns=25,
+                    )
+
+                    # Process stream events
+                    await process_stream_events(result)
+
+                    # Capture output after streaming completes
+                    span.set_outputs({"output": str(result.final_output) if result.final_output else ""})
 
                 print("\n")  # Newlines after response
 

@@ -1,6 +1,6 @@
 """Filesystem agent for file I/O operations."""
 
-from agents import Agent, ModelSettings, Runner, function_tool
+from agents import Agent, Runner, function_tool
 
 from agent_server.config import MODELS
 from agent_server.servers import filesystem_server
@@ -14,7 +14,6 @@ async def filesystem_agent(instructions: str) -> str:
     agent = Agent(
         name="Filesystem Agent",
         model=MODELS["filesystem"]["model"],
-        model_settings=ModelSettings(temperature=MODELS["filesystem"]["temperature"]),
         instructions="""
 You are a filesystem assistant.
 Your role is to read and write files.

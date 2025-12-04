@@ -1,6 +1,6 @@
 """Orchestration agent that coordinates research tasks."""
 
-from agents import Agent, ModelSettings
+from agents import Agent
 
 from agent_server.agent_definitions.research import research_agent
 from agent_server.agent_definitions.filesystem import filesystem_agent
@@ -10,7 +10,6 @@ from agent_server.config import MODELS
 orchestration_agent = Agent(
     name="Orchestration Agent",
     model=MODELS["orchestrator"]["model"],
-    model_settings=ModelSettings(temperature=MODELS["orchestrator"]["temperature"]),
     instructions="""
 You are a research planning and orchestration assistant.
 Your role is to plan the research, find existing research already done and update it.

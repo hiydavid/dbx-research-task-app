@@ -19,10 +19,19 @@ Or press the play button in VSCode on `run.py`.
 
 ## Environment Setup
 
-Requires Python 3.13+ and UV package manager. Create a `.env` file with:
+Requires Python 3.13+ and UV package manager. Create a `.env` file (see `.env.example`):
 ```
 TAVILY_API_KEY=your_tavily_api_key
 OPENAI_API_KEY=your_openai_api_key
+
+# Databricks authentication (profile-based)
+DATABRICKS_CONFIG_PROFILE=e2-fe
+DATABRICKS_HOST="https://e2-demo-field-eng.cloud.databricks.com"
+
+# MLflow configuration
+MLFLOW_EXPERIMENT_ID=567797472280417
+MLFLOW_TRACKING_URI="databricks"
+MLFLOW_REGISTRY_URI="databricks-uc"
 
 # Optional: Override models per agent (defaults shown)
 ORCHESTRATOR_MODEL=gpt-4.1
@@ -32,7 +41,17 @@ FILESYSTEM_MODEL=gpt-4.1-mini
 
 Install dependencies: `uv sync`
 
-Model configuration is centralized in `config.py` via the `MODELS` dict.
+Model configuration is centralized in `config.py` via the `MODELS` dict. Note: `gpt-4.1` models do not support temperature settings.
+
+## MLflow Tracing
+
+Agent traces are automatically captured and sent to Databricks MLflow:
+
+- **Auto-tracing**: `mlflow.openai.autolog()` captures all LLM calls and tool invocations
+- **Top-level span**: `mlflow.start_span()` in `chat.py` wraps each conversation turn with request/response
+- **Configuration**: Set via `MLFLOW_TRACKING_URI` and `MLFLOW_EXPERIMENT_ID` environment variables
+
+Traces show hierarchical view of orchestrator → sub-agent calls in the Databricks MLflow UI.
 
 ## Architecture Overview
 

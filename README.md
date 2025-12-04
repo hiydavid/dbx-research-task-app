@@ -98,7 +98,8 @@ dbx-research-task-app/
 - Environment loading via `python-dotenv`
 - Logging setup (daily log files in `.logs/`)
 - Global config state
-- Per-agent model configuration (model name, temperature)
+- Per-agent model configuration
+- MLflow tracing setup (`mlflow.openai.autolog()`)
 
 ### Session Management (`session.py`)
 
@@ -148,9 +149,20 @@ dbx-research-task-app/
 
 - **Agent Framework**: OpenAI Agents SDK (`openai-agents>=0.6.1`)
 - **MCP Protocol**: Model Context Protocol (`mcp>=1.23.1`)
+- **Tracing**: MLflow (`mlflow>=3.6`) with Databricks integration
 - **Data Validation**: Pydantic (`pydantic>=2.12.5`)
 - **Environment**: Python 3.13+
 - **Package Manager**: UV
+
+## MLflow Tracing
+
+Agent execution is automatically traced and sent to Databricks MLflow:
+
+- `mlflow.openai.autolog()` captures all LLM calls and `@function_tool` invocations
+- `mlflow.start_span()` wraps each conversation turn to capture request/response
+- Traces show hierarchical spans: `orchestrator_turn` → `research_agent` / `filesystem_agent`
+
+View traces in the Databricks MLflow Experiments UI.
 
 ## Usage
 
@@ -170,13 +182,28 @@ python run.py --resume 20241201_143022
 Create a `.env` file:
 
 ```bash
-# Required
-TAVILY_API_KEY=your_tavily_api_key
+# OpenAI API Key
 OPENAI_API_KEY=your_openai_api_key
 
-# Optional: Override default models per agent
-ORCHESTRATOR_MODEL=gpt-4.1          # Default: gpt-4.1
-RESEARCH_MODEL=gpt-4.1-mini         # Default: gpt-4.1-mini
-FILESYSTEM_MODEL=gpt-4.1-mini       # Default: gpt-4.1-mini
+# Tavily API Key (for web search)
+TAVILY_API_KEY=your_tavily_api_key
+
+# Databricks authentication (profile-based)
+DATABRICKS_CONFIG_PROFILE=DEFAULT
+DATABRICKS_TOKEN=your_databricks_api_key
+DATABRICKS_HOST="https://your-workspace.cloud.databricks.com"
+
+# MLflow configuration
+MLFLOW_EXPERIMENT_ID=your_experiment_id
+MLFLOW_TRACKING_URI="databricks"
+MLFLOW_REGISTRY_URI="databricks-uc"
+
+# Optional: Override models per agent (defaults shown)
+ORCHESTRATOR_MODEL=gpt-4.1
+RESEARCH_MODEL=gpt-4.1-mini
+FILESYSTEM_MODEL=gpt-4.1-mini
+
 ```
+
+Note: `gpt-4.1` models do not support temperature settings.
 

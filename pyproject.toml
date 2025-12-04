@@ -5,7 +5,9 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
+    "databricks-sdk>=0.56.0",
     "mcp>=1.23.1",
+    "mlflow>=3.6",
     "openai-agents>=0.6.1",
     "pydantic>=2.12.5",
     "python-dotenv>=1.2.1",
