@@ -22,7 +22,6 @@ Or press the play button in VSCode on `run.py`.
 Requires Python 3.13+ and UV package manager. Create a `.env` file (see `.env.example`):
 ```
 TAVILY_API_KEY=your_tavily_api_key
-OPENAI_API_KEY=your_openai_api_key
 
 # Databricks authentication (profile-based)
 DATABRICKS_CONFIG_PROFILE=e2-fe
@@ -34,14 +33,14 @@ MLFLOW_TRACKING_URI="databricks"
 MLFLOW_REGISTRY_URI="databricks-uc"
 
 # Optional: Override models per agent (defaults shown)
-ORCHESTRATOR_MODEL=gpt-4.1
-RESEARCH_MODEL=gpt-4.1-mini
-FILESYSTEM_MODEL=gpt-4.1-mini
+ORCHESTRATOR_MODEL=databricks-claude-sonnet-4-5
+RESEARCH_MODEL=databricks-claude-sonnet-4-5
+FILESYSTEM_MODEL=databricks-claude-sonnet-4-5
 ```
 
 Install dependencies: `uv sync`
 
-Model configuration is centralized in `config.py` via the `MODELS` dict. Note: `gpt-4.1` models do not support temperature settings.
+Model configuration is centralized in `config.py` via the `MODELS` dict. Models are served via Databricks Foundation Model API (FMAPI), authenticated through WorkspaceClient.
 
 ## MLflow Tracing
 

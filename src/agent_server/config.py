@@ -6,10 +6,20 @@ from datetime import datetime
 from pathlib import Path
 
 import mlflow
+from agents import set_default_openai_api, set_default_openai_client
 from agents.tracing import set_trace_processors
+from databricks.sdk import WorkspaceClient
 from dotenv import load_dotenv
 
+from agent_server.utils import get_async_openai_client
+
 load_dotenv()
+
+# Initialize Databricks FMAPI client
+workspace_client = WorkspaceClient()
+databricks_openai_client = get_async_openai_client(workspace_client)
+set_default_openai_client(databricks_openai_client)
+set_default_openai_api("chat_completions")
 
 # Configure MLflow for Databricks
 mlflow.set_tracking_uri(os.getenv("MLFLOW_TRACKING_URI", "databricks"))
@@ -39,15 +49,16 @@ CONFIG = {
 
 # Model configuration per agent
 # Environment variables override defaults: ORCHESTRATOR_MODEL, RESEARCH_MODEL, FILESYSTEM_MODEL
+# Uses Databricks FMAPI model names (e.g., databricks-claude-sonnet-4-5)
 MODELS = {
     "orchestrator": {
-        "model": os.getenv("ORCHESTRATOR_MODEL", "gpt-4.1"),
+        "model": os.getenv("ORCHESTRATOR_MODEL", "databricks-claude-sonnet-4-5"),
     },
     "research": {
-        "model": os.getenv("RESEARCH_MODEL", "gpt-4.1-mini"),
+        "model": os.getenv("RESEARCH_MODEL", "databricks-claude-sonnet-4-5"),
     },
     "filesystem": {
-        "model": os.getenv("FILESYSTEM_MODEL", "gpt-4.1-mini"),
+        "model": os.getenv("FILESYSTEM_MODEL", "databricks-claude-sonnet-4-5"),
     },
 }
 
