@@ -19,59 +19,47 @@ Or press the play button in VSCode on `run.py`.
 
 ## Environment Setup
 
-Requires Python 3.13+ and UV package manager. Create a `.env` file (see `.env.example`):
+Requires Python 3.10+ and UV package manager. Create a `.env` file:
 ```
-TAVILY_API_KEY=your_tavily_api_key
+# Anthropic API key (required)
+ANTHROPIC_API_KEY=your_anthropic_api_key
 
-# Databricks authentication (profile-based)
-DATABRICKS_CONFIG_PROFILE=e2-fe
-DATABRICKS_HOST="https://e2-demo-field-eng.cloud.databricks.com"
-
-# MLflow configuration
-MLFLOW_EXPERIMENT_ID=567797472280417
-MLFLOW_TRACKING_URI="databricks"
-MLFLOW_REGISTRY_URI="databricks-uc"
-
-# Optional: Override models per agent (defaults shown)
-ORCHESTRATOR_MODEL=databricks-claude-sonnet-4-5
-RESEARCH_MODEL=databricks-claude-sonnet-4-5
-FILESYSTEM_MODEL=databricks-claude-sonnet-4-5
+# Model selection (optional, defaults to sonnet)
+# Options: opus, sonnet, haiku, or full model ID
+CLAUDE_MODEL=sonnet
 ```
 
 Install dependencies: `uv sync`
 
-Model configuration is centralized in `config.py` via the `MODELS` dict. Models are served via Databricks Foundation Model API (FMAPI), authenticated through WorkspaceClient.
-
-## MLflow Tracing
-
-Agent traces are automatically captured and sent to Databricks MLflow:
-
-- **Auto-tracing**: `mlflow.openai.autolog()` captures all LLM calls and tool invocations
-- **Top-level span**: `mlflow.start_span()` in `chat.py` wraps each conversation turn with request/response
-- **Configuration**: Set via `MLFLOW_TRACKING_URI` and `MLFLOW_EXPERIMENT_ID` environment variables
-
-Traces show hierarchical view of orchestrator → sub-agent calls in the Databricks MLflow UI.
-
 ## Architecture Overview
 
-Multi-agent system using the OpenAI Agents SDK with MCP (Model Context Protocol) servers.
+Research assistant powered by the **Claude Agent SDK** (`claude-agent-sdk`).
 
-**Agent Hierarchy:**
-- **Orchestration Agent** (`orchestrator.py`): Top-level coordinator that plans research and delegates to sub-agents
-  - Has `research_agent` and `filesystem_agent` as tools (sub-agents)
-  - Sequential Thinking MCP server is attached at runtime in `chat.py` (not in the agent definition)
-- **Research Agent** (`research.py`): Web search via Tavily MCP, returns `ResearchSourcesModel` (list of URLs)
-- **Filesystem Agent** (`filesystem.py`): File I/O via Filesystem MCP, sandboxed to `output/` directory
+**Core Design:**
+- Uses the `query()` function from Claude Agent SDK for streaming conversations
+- Token-level streaming enabled via `include_partial_messages=True`
+- Built-in tools: `Read`, `Write`, `Edit`, `Bash`, `Glob`, `Grep`, `WebSearch`, `WebFetch`, `Task`
+- The `Task` tool enables delegation to specialized subagents for complex research tasks
 
-**MCP Servers** (defined in `servers.py`):
-- Sequential Thinking: `@modelcontextprotocol/server-sequential-thinking`
-- Filesystem: `@modelcontextprotocol/server-filesystem` (scoped to `output/`)
-- Tavily: `tavily-mcp@latest`
-
-**Key Pattern:** Sub-agents use async context managers to manage MCP server lifecycles:
+**Key Pattern:** Single agent with tool delegation via the SDK's built-in `Task` tool:
 ```python
-async with tavily_server:
-    result = await Runner.run(agent, instructions)
+from claude_agent_sdk import query, ClaudeAgentOptions
+from claude_agent_sdk.types import StreamEvent
+
+options = ClaudeAgentOptions(
+    system_prompt="...",
+    allowed_tools=["Read", "Write", "WebSearch", "Task"],
+    permission_mode="acceptEdits",
+    include_partial_messages=True,
+)
+
+async for message in query(prompt=user_input, options=options):
+    if isinstance(message, StreamEvent):
+        # Handle streaming tokens via content_block_delta events
+        event = message.event
+        if event.get("type") == "content_block_delta":
+            text = event.get("delta", {}).get("text", "")
+            print(text, end="", flush=True)
 ```
 
 ## Key Directories
@@ -79,3 +67,20 @@ async with tavily_server:
 - `output/` - Agent-generated research files (filesystem sandbox)
 - `.sessions/` - Saved conversation history (JSON)
 - `.logs/` - Daily application logs
+
+## Key Files
+
+- `src/agent_server/chat.py` - Main chat loop with Claude Agent SDK integration and streaming
+- `src/agent_server/config.py` - Configuration, model selection, and logging setup
+- `src/agent_server/cli.py` - CLI commands and argument parsing
+- `src/agent_server/session.py` - Session persistence (save/load/list)
+- `src/agent_server/main.py` - Entry point
+
+## Model Configuration
+
+Models can be specified via the `CLAUDE_MODEL` environment variable:
+
+- `opus` → claude-opus-4-5-20250514
+- `sonnet` → claude-sonnet-4-5-20250514 (default)
+- `haiku` → claude-haiku-4-5-20250514
+- Or use a full model ID directly

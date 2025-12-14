@@ -1,4 +1,4 @@
-"""Research Task Manager Agent - A multi-agent research assistant."""
+"""Research Task Manager Agent - Powered by Claude Agent SDK."""
 
 from agent_server.config import CONFIG, DEFAULT_SANDBOX, SESSIONS_DIR, LOGS_DIR
 

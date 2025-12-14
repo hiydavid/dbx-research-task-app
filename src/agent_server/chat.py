@@ -1,27 +1,63 @@
-"""Interactive chat loop for the research assistant."""
+"""Interactive chat loop for the research assistant using Claude Agent SDK."""
 
 import traceback
 
-import mlflow
-from agents import Runner
-from mlflow.entities import SpanType
-from agents.stream_events import RawResponsesStreamEvent, RunItemStreamEvent
-from openai.types.responses import ResponseTextDeltaEvent
+from claude_agent_sdk import query, ClaudeAgentOptions
+from claude_agent_sdk.types import AssistantMessage, ResultMessage, StreamEvent, SystemMessage
 
-from agent_server.config import CONFIG, logger
+from agent_server.config import CONFIG, get_model, logger
 from agent_server.session import save_session, load_session, list_sessions
 from agent_server.cli import print_help, print_status
-from agent_server.servers import thinking_server
-from agent_server.agent_definitions import orchestration_agent
+
+# System prompt for the research assistant
+SYSTEM_PROMPT = """You are a research planning and orchestration assistant.
+Your role is to plan the research, find existing research already done and update it.
+
+You have access to powerful tools:
+- Use WebSearch to find research sources on the web
+- Use Read/Write/Edit to manage research files in the output directory
+- Use the Task tool to delegate complex research subtasks to specialized subagents
+- Use Bash for any shell operations needed
+
+When conducting research:
+1. First search for relevant sources using WebSearch
+2. Analyze and synthesize the information found
+3. Write structured research reports to files
+4. Update existing research when new information is found
+
+Always cite your sources and provide URLs when available.
+"""
+
+
+def get_agent_options() -> ClaudeAgentOptions:
+    """Create Claude Agent options with MCP servers and tools."""
+    return ClaudeAgentOptions(
+        model=get_model(),
+        system_prompt=SYSTEM_PROMPT,
+        allowed_tools=[
+            "Read",
+            "Write",
+            "Edit",
+            "Bash",
+            "Glob",
+            "Grep",
+            "WebSearch",
+            "WebFetch",
+            "Task",
+        ],
+        permission_mode="acceptEdits",
+        cwd=CONFIG["output_dir"],
+        include_partial_messages=True,  # Enable token-level streaming
+    )
 
 
 async def interactive_chat(resume_session: str = None) -> None:
     """
-    Run an interactive chat loop with the orchestration agent.
+    Run an interactive chat loop with the Claude Agent SDK.
     Type 'exit', 'quit', or press Ctrl+C to end the session.
     """
     print("=" * 60)
-    print("Research Assistant - Interactive Mode")
+    print("Research Assistant - Interactive Mode (Claude Agent SDK)")
     print("=" * 60)
     print("Type /help for available commands")
     print("Type 'exit', 'quit', or press Ctrl+C to end the session.")
@@ -29,89 +65,112 @@ async def interactive_chat(resume_session: str = None) -> None:
     print()
 
     # Initialize or resume conversation history
+    conversation_history = []
+    session_id = None
+
     if resume_session:
         conversation_history = load_session(resume_session)
         CONFIG["session_file"] = resume_session
-    else:
-        conversation_history = []
 
-    async with thinking_server:
-        orchestration_agent.mcp_servers = [thinking_server]
+    while True:
+        try:
+            # Get user input
+            user_input = input(" > ").strip()
 
-        while True:
-            try:
-                # Get user input
-                user_input = input(" > ").strip()
-
-                # Check for exit commands
-                if user_input.lower() in {"exit", "quit", "q"}:
-                    # Offer to save session
-                    if conversation_history:
-                        save_choice = input("Save session before exiting? (y/n): ").strip().lower()
-                        if save_choice == "y":
-                            save_session(conversation_history)
-                    print("\n" + "=" * 60)
-                    print("Ending session. Goodbye!")
-                    print("=" * 60)
-                    break
-
-                # Skip empty inputs
-                if not user_input:
-                    continue
-
-                # Handle commands
-                if user_input.startswith("/"):
-                    handle_command(user_input, conversation_history)
-                    continue
-
-                # Add user message to conversation
-                conversation_history.append({"role": "user", "content": user_input})
-
-                # Run the agent with streaming, wrapped in MLflow trace
-                print()  # Newline before response
-                with mlflow.start_span(name="orchestrator_turn", span_type=SpanType.AGENT) as span:
-                    span.set_inputs({"messages": conversation_history})
-
-                    result = Runner.run_streamed(
-                        orchestration_agent,
-                        input=conversation_history,
-                        max_turns=25,
-                    )
-
-                    # Process stream events
-                    await process_stream_events(result)
-
-                    # Capture output after streaming completes
-                    span.set_outputs({"output": str(result.final_output) if result.final_output else ""})
-
-                print("\n")  # Newlines after response
-
-                # Update conversation history with the full result
-                conversation_history = result.to_input_list()
-
-            except KeyboardInterrupt:
-                # Offer to save on interrupt
-                print("\n")
+            # Check for exit commands
+            if user_input.lower() in {"exit", "quit", "q"}:
                 if conversation_history:
                     save_choice = input("Save session before exiting? (y/n): ").strip().lower()
                     if save_choice == "y":
                         save_session(conversation_history)
                 print("\n" + "=" * 60)
-                print("Session interrupted. Goodbye!")
+                print("Ending session. Goodbye!")
                 print("=" * 60)
                 break
-            except EOFError:
-                print("\n\n" + "=" * 60)
-                print("Session ended. Goodbye!")
-                print("=" * 60)
-                break
-            except Exception as e:
-                # Log full error to file, show friendly message to user
-                logger.error(f"Error during agent execution: {e}")
-                logger.error(traceback.format_exc())
-                print(f"\nError: {e}")
-                print("(Full details logged to .logs/ directory)")
-                print("You can continue with a new query or type 'exit' to quit.\n")
+
+            # Skip empty inputs
+            if not user_input:
+                continue
+
+            # Handle commands
+            if user_input.startswith("/"):
+                handle_command(user_input, conversation_history)
+                continue
+
+            # Add user message to conversation history
+            conversation_history.append({"role": "user", "content": user_input})
+
+            # Get agent options
+            options = get_agent_options()
+
+            # If we have a session_id from previous turn, use it to resume
+            if session_id:
+                options = ClaudeAgentOptions(
+                    **{**options.__dict__, "resume": session_id}
+                )
+
+            # Run the agent with streaming
+            print()  # Newline before response
+            assistant_response = ""
+
+            async for message in query(prompt=user_input, options=options):
+                # Handle StreamEvent (token-level streaming)
+                if isinstance(message, StreamEvent):
+                    event = message.event
+                    event_type = event.get("type", "")
+
+                    if event_type == "content_block_delta":
+                        delta = event.get("delta", {})
+                        if delta.get("type") == "text_delta":
+                            text = delta.get("text", "")
+                            print(text, end="", flush=True)
+                            assistant_response += text
+
+                # Handle SystemMessage (init, etc.)
+                elif isinstance(message, SystemMessage):
+                    if message.subtype == "init" and hasattr(message, "data"):
+                        session_id = message.data.get("session_id")
+
+                # Handle complete AssistantMessage (for tool use notifications)
+                elif isinstance(message, AssistantMessage):
+                    for block in message.content:
+                        if hasattr(block, "name"):
+                            # Tool use block - show notification
+                            print(f"\n[Using tool: {block.name}...]", flush=True)
+
+                # Handle ResultMessage (completion)
+                elif isinstance(message, ResultMessage):
+                    pass  # Response already streamed via StreamEvent
+
+            print("\n")  # Newlines after response
+
+            # Add assistant response to history
+            if assistant_response:
+                conversation_history.append({"role": "assistant", "content": assistant_response})
+
+        except KeyboardInterrupt:
+            print("\n")
+            if conversation_history:
+                save_choice = input("Save session before exiting? (y/n): ").strip().lower()
+                if save_choice == "y":
+                    save_session(conversation_history)
+            print("\n" + "=" * 60)
+            print("Session interrupted. Goodbye!")
+            print("=" * 60)
+            break
+
+        except EOFError:
+            print("\n\n" + "=" * 60)
+            print("Session ended. Goodbye!")
+            print("=" * 60)
+            break
+
+        except Exception as e:
+            logger.error(f"Error during agent execution: {e}")
+            logger.error(traceback.format_exc())
+            print(f"\nError: {e}")
+            print("(Full details logged to .logs/ directory)")
+            print("You can continue with a new query or type 'exit' to quit.\n")
 
 
 def handle_command(user_input: str, conversation_history: list) -> None:
@@ -131,7 +190,7 @@ def handle_command(user_input: str, conversation_history: list) -> None:
         sessions = list_sessions()
         if sessions:
             print("\nSaved sessions:")
-            for s in sessions[:10]:  # Show last 10
+            for s in sessions[:10]:
                 print(f"  - {s.stem}")
             print()
         else:
@@ -140,19 +199,3 @@ def handle_command(user_input: str, conversation_history: list) -> None:
         save_session(conversation_history, cmd_arg)
     else:
         print(f"Unknown command: /{cmd}. Type /help for available commands.\n")
-
-
-async def process_stream_events(result) -> None:
-    """Process streaming events from the agent."""
-    async for event in result.stream_events():
-        if isinstance(event, RawResponsesStreamEvent):
-            if isinstance(event.data, ResponseTextDeltaEvent):
-                # Stream text output in real-time
-                print(event.data.delta, end="", flush=True)
-        elif isinstance(event, RunItemStreamEvent):
-            # Show progress for tool calls
-            if event.item.type == "tool_call_item":
-                tool_name = getattr(event.item.raw_item, 'name', 'unknown')
-                print(f"\n[Calling: {tool_name}...]", flush=True)
-            elif event.item.type == "tool_call_output_item":
-                print("[Done]", flush=True)

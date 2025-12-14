@@ -1,15 +1,11 @@
 [project]
 name = "dbx-research-task-app"
-version = "0.1.0"
-description = "Add your description here"
+version = "0.2.0"
+description = "Research assistant powered by Claude Agent SDK"
 readme = "README.md"
-requires-python = ">=3.13"
+requires-python = ">=3.10"
 dependencies = [
-    "databricks-sdk>=0.56.0",
-    "mcp>=1.23.1",
-    "mlflow>=3.6",
-    "openai-agents>=0.6.1",
+    "claude-agent-sdk>=0.1.11",
     "pydantic>=2.12.5",
     "python-dotenv>=1.2.1",
-    "uv>=0.9.15",
 ]

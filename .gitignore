@@ -1,7 +1,8 @@
-.DS_store
-.env
-.venv
-.logs
-.sessions
+.logs/
+.venv/
+.sessions/
 output/
+.env
+.env.local
+.DS_store
 __pycache__

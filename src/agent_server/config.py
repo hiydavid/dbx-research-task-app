@@ -1,34 +1,27 @@
-"""Configuration and path settings."""
+"""Configuration and path settings for Claude Agent SDK."""
 
 import logging
 import os
 from datetime import datetime
 from pathlib import Path
 
-import mlflow
-from agents import set_default_openai_api, set_default_openai_client
-from agents.tracing import set_trace_processors
-from databricks.sdk import WorkspaceClient
 from dotenv import load_dotenv
-
-from agent_server.utils import get_async_openai_client
 
 load_dotenv()
 
-# Initialize Databricks FMAPI client
-workspace_client = WorkspaceClient()
-databricks_openai_client = get_async_openai_client(workspace_client)
-set_default_openai_client(databricks_openai_client)
-set_default_openai_api("chat_completions")
+# Model shorthand mapping to full model IDs
+MODEL_MAP = {
+    "opus": "claude-opus-4-5-20250514",
+    "sonnet": "claude-sonnet-4-5-20250514",
+    "haiku": "claude-haiku-4-5-20250514",
+}
 
-# Configure MLflow for Databricks
-mlflow.set_tracking_uri(os.getenv("MLFLOW_TRACKING_URI", "databricks"))
-if experiment_id := os.getenv("MLFLOW_EXPERIMENT_ID"):
-    mlflow.set_experiment(experiment_id=experiment_id)
 
-# Disable OpenAI native tracing, use MLflow instead
-set_trace_processors([])
-mlflow.openai.autolog()
+def get_model() -> str:
+    """Get model from CLAUDE_MODEL env var, default to sonnet."""
+    model_name = os.getenv("CLAUDE_MODEL", "sonnet").lower()
+    return MODEL_MAP.get(model_name, model_name)  # Allow full ID as fallback
+
 
 # Project root (3 levels up from config.py: agent_server -> src -> project root)
 PROJECT_ROOT = Path(__file__).parent.parent.parent
@@ -45,21 +38,6 @@ Path(DEFAULT_SANDBOX).mkdir(exist_ok=True)
 CONFIG = {
     "output_dir": DEFAULT_SANDBOX,
     "session_file": None,
-}
-
-# Model configuration per agent
-# Environment variables override defaults: ORCHESTRATOR_MODEL, RESEARCH_MODEL, FILESYSTEM_MODEL
-# Uses Databricks FMAPI model names (e.g., databricks-claude-sonnet-4-5)
-MODELS = {
-    "orchestrator": {
-        "model": os.getenv("ORCHESTRATOR_MODEL", "databricks-claude-sonnet-4-5"),
-    },
-    "research": {
-        "model": os.getenv("RESEARCH_MODEL", "databricks-claude-sonnet-4-5"),
-    },
-    "filesystem": {
-        "model": os.getenv("FILESYSTEM_MODEL", "databricks-claude-sonnet-4-5"),
-    },
 }
 
 

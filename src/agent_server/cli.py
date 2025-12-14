@@ -36,10 +36,11 @@ def print_help() -> None:
     print("  exit, quit, q - End the session")
     print()
     print("Research Capabilities:")
-    print("  - Search the web for sources (Tavily)")
+    print("  - Search the web for sources (WebSearch)")
     print("  - Create structured research plans")
     print("  - Read and update existing research files")
     print("  - Generate research reports")
+    print("  - Delegate subtasks to specialized agents (Task)")
     print("=" * 60 + "\n")
 
 
