@@ -20,7 +20,8 @@ Or press the play button in VSCode on `run.py`.
 ## Environment Setup
 
 Requires Python 3.10+ and UV package manager. Create a `.env` file:
-```
+
+```text
 # Anthropic API key (required)
 ANTHROPIC_API_KEY=your_anthropic_api_key
 
@@ -36,12 +37,14 @@ Install dependencies: `uv sync`
 Research assistant powered by the **Claude Agent SDK** (`claude-agent-sdk`).
 
 **Core Design:**
+
 - Uses the `query()` function from Claude Agent SDK for streaming conversations
 - Token-level streaming enabled via `include_partial_messages=True`
 - Built-in tools: `Read`, `Write`, `Edit`, `Bash`, `Glob`, `Grep`, `WebSearch`, `WebFetch`, `Task`
 - The `Task` tool enables delegation to specialized subagents for complex research tasks
 
 **Key Pattern:** Single agent with tool delegation via the SDK's built-in `Task` tool:
+
 ```python
 from claude_agent_sdk import query, ClaudeAgentOptions
 from claude_agent_sdk.types import StreamEvent

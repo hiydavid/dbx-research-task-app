@@ -4,7 +4,7 @@ A research assistant powered by the Claude Agent SDK with real-time streaming, w
 
 ## Project Structure
 
-```
+```text
 dbx-research-task-app/
 ├── run.py                   # Entry point (run with VSCode play button)
 ├── pyproject.toml
@@ -23,7 +23,7 @@ dbx-research-task-app/
 
 ## Architecture
 
-```
+```text
 User Request
      │
      ▼
