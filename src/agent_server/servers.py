@@ -35,7 +35,8 @@ tavily_server = MCPServerStdio(
         "command": "npx",
         "args": ["-y", "tavily-mcp@latest"],
         "env": {
-            "TAVILY_API_KEY": os.getenv("TAVILY_API_KEY")
+            **os.environ,  # Inherit full environment for npx/node
+            "TAVILY_API_KEY": os.getenv("TAVILY_API_KEY", ""),
         }
     },
 )
