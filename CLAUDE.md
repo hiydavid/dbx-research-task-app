@@ -4,18 +4,46 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Running the Application
 
+### CLI Mode
+
 ```bash
-# Run via UV (recommended)
 python run.py
-
-# With custom output directory
 python run.py --output-dir ./my-research
-
-# Resume a previous session
 python run.py --resume <session_name>
 ```
 
-Or press the play button in VSCode on `run.py`.
+### Web UI Mode
+
+```bash
+# Build frontend (first time)
+cd src/web && npm install && npm run build && cd ../..
+
+# Start server
+python run_server.py
+```
+
+### Development
+
+```bash
+# Terminal 1: Python API
+python run_server.py
+
+# Terminal 2: Vite dev server
+cd src/web && npm run dev
+```
+
+### Databricks Apps Deployment
+
+```bash
+# Build frontend (required before deployment)
+cd src/web && npm install && npm run build && cd ../..
+
+# Create secret for API key
+databricks secrets create-scope research-app
+databricks secrets put-secret research-app anthropic-api-key
+```
+
+Configuration: `app.yaml` (runtime) and `requirements.txt` (pip deps)
 
 ## Environment Setup
 
@@ -70,14 +98,31 @@ async for message in query(prompt=user_input, options=options):
 - `output/` - Agent-generated research files (filesystem sandbox)
 - `.sessions/` - Saved conversation history (JSON)
 - `.logs/` - Daily application logs
+- `static/` - Built React app (served by Python)
+- `src/web/` - React frontend source
 
 ## Key Files
 
-- `src/agent_server/chat.py` - Main chat loop with Claude Agent SDK integration and streaming
-- `src/agent_server/config.py` - Configuration, model selection, and logging setup
-- `src/agent_server/cli.py` - CLI commands and argument parsing
-- `src/agent_server/session.py` - Session persistence (save/load/list)
-- `src/agent_server/main.py` - Entry point
+### Deployment
+
+- `app.yaml` - Databricks Apps runtime configuration
+- `requirements.txt` - pip dependencies for Databricks Apps
+
+### Backend (Python)
+
+- `src/agent_server/chat.py` - CLI chat loop with streaming
+- `src/agent_server/core/agent.py` - Shared agent logic (used by CLI and API)
+- `src/agent_server/api/app.py` - Starlette ASGI app
+- `src/agent_server/api/routes.py` - API endpoints with SSE streaming
+- `src/agent_server/config.py` - Configuration and logging
+- `src/agent_server/session.py` - Session persistence
+
+### Frontend (React)
+
+- `src/web/src/App.tsx` - Main app component
+- `src/web/src/hooks/useChat.ts` - SSE streaming hook
+- `src/web/src/components/chat/` - Chat UI components
+- `src/web/src/components/research/` - Research sidebar (placeholders)
 
 ## Model Configuration
 
