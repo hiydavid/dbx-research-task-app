@@ -1,0 +1,12 @@
+# Databricks Apps uses pip for dependency installation
+# This file mirrors pyproject.toml dependencies plus server requirements
+
+# Core dependencies
+claude-agent-sdk>=0.1.11
+pydantic>=2.12.5
+python-dotenv>=1.2.1
+
+# ASGI server (required for Databricks Apps deployment)
+starlette>=0.45.0
+uvicorn>=0.34.0
+gunicorn>=23.0.0

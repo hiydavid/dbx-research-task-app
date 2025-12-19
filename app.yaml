@@ -1,0 +1,27 @@
+# Databricks Apps configuration
+# See: https://docs.databricks.com/aws/en/dev-tools/databricks-apps/app-runtime
+
+command:
+  - gunicorn
+  - agent_server.api.app:app
+  - --bind
+  - 0.0.0.0:8000
+  - --worker-class
+  - uvicorn.workers.UvicornWorker
+  - --workers
+  - "1"
+
+env:
+  # Required: Configure ANTHROPIC_API_KEY as a Databricks secret
+  # Create secret scope: databricks secrets create-scope research-app
+  # Add secret: databricks secrets put-secret research-app anthropic-api-key
+  - name: ANTHROPIC_API_KEY
+    valueFrom: research-app.anthropic-api-key
+
+  # Optional: Model selection (opus, sonnet, haiku, or full model ID)
+  - name: CLAUDE_MODEL
+    value: sonnet
+
+  # Required: Set Python path to include src directory
+  - name: PYTHONPATH
+    value: src
