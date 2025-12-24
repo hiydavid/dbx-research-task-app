@@ -4,15 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Running the Application
 
-### CLI Mode
-
-```bash
-python run.py
-python run.py --output-dir ./my-research
-python run.py --resume <session_name>
-```
-
-### Web UI Mode
+### Quick Start
 
 ```bash
 # Build frontend (first time)
@@ -110,8 +102,7 @@ async for message in query(prompt=user_input, options=options):
 
 ### Backend (Python)
 
-- `src/agent_server/chat.py` - CLI chat loop with streaming
-- `src/agent_server/core/agent.py` - Shared agent logic (used by CLI and API)
+- `src/agent_server/core/agent.py` - Agent logic with streaming
 - `src/agent_server/api/app.py` - Starlette ASGI app
 - `src/agent_server/api/routes.py` - API endpoints with SSE streaming
 - `src/agent_server/config.py` - Configuration and logging

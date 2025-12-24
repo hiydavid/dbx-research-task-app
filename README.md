@@ -6,7 +6,6 @@ A research assistant powered by the Claude Agent SDK with real-time streaming, w
 
 ```text
 dbx-research-task-app/
-├── run.py                   # CLI entry point
 ├── run_server.py            # Web server entry point
 ├── pyproject.toml
 ├── .env                     # API keys (ANTHROPIC_API_KEY)
@@ -16,10 +15,8 @@ dbx-research-task-app/
 ├── static/                  # Built React app (generated)
 ├── src/
 │   ├── agent_server/        # Python backend
-│   │   ├── main.py          # CLI async entry point
-│   │   ├── chat.py          # Interactive chat loop
 │   │   ├── api/             # Web API layer (Starlette + SSE)
-│   │   └── core/            # Shared agent logic
+│   │   └── core/            # Agent logic
 │   └── web/                 # React frontend source
 │       ├── src/components/  # React components
 │       └── src/hooks/       # Custom React hooks
@@ -48,25 +45,6 @@ User Request
 
 ## Module Details
 
-### Entry Point (`main.py`)
-
-- Parses CLI arguments
-- Initializes configuration
-- Launches interactive chat loop
-
-### Chat Loop (`chat.py`)
-
-- Interactive REPL with real-time token streaming
-- Handles `StreamEvent` messages for live output
-- Manages conversation history
-- Displays tool use notifications
-
-### CLI (`cli.py`)
-
-- `--output-dir, -o`: Directory for research output files
-- `--resume, -r`: Resume a previous session by name
-- Slash commands: `/help`, `/clear`, `/status`, `/sessions`, `/save [name]`
-
 ### Configuration (`config.py`)
 
 - Environment loading via `python-dotenv`
@@ -82,22 +60,7 @@ User Request
 
 ## Usage
 
-### CLI Mode
-
-```bash
-# Run the research assistant CLI
-python run.py
-
-# With custom output directory
-python run.py --output-dir ./my-research
-
-# Resume a previous session
-python run.py --resume 20241201_143022
-```
-
-Or press the play button in VSCode on `run.py`.
-
-### Web UI Mode
+### Quick Start
 
 ```bash
 # Build the React frontend (first time only)
@@ -109,7 +72,7 @@ python run_server.py
 
 Then open <http://localhost:8000> in your browser.
 
-### Development (Frontend)
+### Development
 
 ```bash
 # Terminal 1: Start Python API server
