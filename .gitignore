@@ -6,6 +6,7 @@ output/
 .env.local
 .DS_store
 __pycache__
+.claude
 
 # Frontend dev dependencies (built files in static/ must be committed for Databricks Apps)
 src/web/node_modules/
