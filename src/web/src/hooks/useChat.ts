@@ -1,11 +1,12 @@
 import { useState, useCallback, useRef } from 'react'
 import type { Message } from '@/types'
 
-export function useChat() {
+export function useChat(initialSessionId?: string | null) {
   const [messages, setMessages] = useState<Message[]>([])
   const [isStreaming, setIsStreaming] = useState(false)
+  const [isLoadingSession, setIsLoadingSession] = useState(false)
   const [currentToolUse, setCurrentToolUse] = useState<string | null>(null)
-  const [sessionId, setSessionId] = useState<string | null>(null)
+  const [sessionId, setSessionId] = useState<string | null>(initialSessionId ?? null)
   const abortRef = useRef<AbortController | null>(null)
 
   const sendMessage = useCallback(async (content: string) => {
@@ -109,12 +110,43 @@ export function useChat() {
     setSessionId(null)
   }, [])
 
+  const loadSession = useCallback(async (id: string) => {
+    setIsLoadingSession(true)
+    try {
+      const response = await fetch(`/api/sessions/${id}`)
+      if (!response.ok) {
+        throw new Error(`HTTP error: ${response.status}`)
+      }
+      const data = await response.json()
+      // Convert conversation history to messages
+      const loadedMessages: Message[] = (data.conversation || []).map(
+        (msg: { role: string; content: string | { type: string; text?: string }[] }) => ({
+          role: msg.role as 'user' | 'assistant',
+          content: typeof msg.content === 'string'
+            ? msg.content
+            : msg.content
+                .filter((block: { type: string }) => block.type === 'text')
+                .map((block: { text?: string }) => block.text || '')
+                .join(''),
+        })
+      )
+      setMessages(loadedMessages)
+      setSessionId(id)
+    } catch (error) {
+      console.error('Failed to load session:', error)
+    } finally {
+      setIsLoadingSession(false)
+    }
+  }, [])
+
   return {
     messages,
     isStreaming,
+    isLoadingSession,
     sendMessage,
     stopStreaming,
     clearMessages,
+    loadSession,
     currentToolUse,
     sessionId
   }
