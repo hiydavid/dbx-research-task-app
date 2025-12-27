@@ -8,10 +8,20 @@ import { ScrollArea } from '@/components/ui/scroll-area'
 
 interface ChatContainerProps {
   sessionId?: string
+  onSessionChange?: (sessionId: string | null) => void
 }
 
-export function ChatContainer({ sessionId }: ChatContainerProps) {
-  const { messages, isStreaming, isLoadingSession, sendMessage, stopStreaming, loadSession, currentToolUse } = useChat(sessionId)
+export function ChatContainer({ sessionId, onSessionChange }: ChatContainerProps) {
+  const {
+    messages,
+    isStreaming,
+    isLoadingSession,
+    sendMessage,
+    stopStreaming,
+    loadSession,
+    currentToolUse,
+    sessionId: activeSessionId,
+  } = useChat(sessionId)
   const scrollRef = useRef<HTMLDivElement>(null)
   const hasLoadedSession = useRef(false)
 
@@ -22,6 +32,13 @@ export function ChatContainer({ sessionId }: ChatContainerProps) {
       loadSession(sessionId)
     }
   }, [sessionId, loadSession])
+
+  // Notify parent when session ID changes
+  useEffect(() => {
+    if (activeSessionId && onSessionChange) {
+      onSessionChange(activeSessionId)
+    }
+  }, [activeSessionId, onSessionChange])
 
   // Auto-scroll on new messages
   useEffect(() => {

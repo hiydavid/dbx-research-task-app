@@ -10,3 +10,7 @@ python-dotenv>=1.2.1
 starlette>=0.45.0
 uvicorn>=0.34.0
 gunicorn>=23.0.0
+
+# Database
+sqlalchemy[asyncio]>=2.0
+aiosqlite>=0.19

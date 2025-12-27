@@ -1,6 +1,59 @@
 import { useState, useCallback, useRef } from 'react'
 import type { Message } from '@/types'
 
+// Regex to detect research task commands from planner agent
+const RESEARCH_TASK_REGEX = /:::research_task\n([\s\S]*?)\n:::/g
+
+interface ResearchTaskRequest {
+  topic: string
+  scope: string
+  output: string
+}
+
+/**
+ * Detect research task commands in assistant message content.
+ * Planner agent outputs :::research_task JSON ::: blocks to trigger research.
+ */
+function detectResearchTasks(content: string): ResearchTaskRequest[] {
+  const matches = [...content.matchAll(RESEARCH_TASK_REGEX)]
+  return matches.map((match) => {
+    try {
+      return JSON.parse(match[1]) as ResearchTaskRequest
+    } catch {
+      console.error('Failed to parse research task:', match[1])
+      return null
+    }
+  }).filter((task): task is ResearchTaskRequest => task !== null)
+}
+
+/**
+ * Start a research task via the API.
+ */
+async function startResearchTask(sessionId: string, task: ResearchTaskRequest): Promise<void> {
+  const prompt = `Research Topic: ${task.topic}\nScope: ${task.scope}\nOutput Format: ${task.output}`
+
+  try {
+    const response = await fetch('/api/tasks', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        session_id: sessionId,
+        prompt,
+        mode: 'background',
+      }),
+    })
+
+    if (!response.ok) {
+      console.error('Failed to start research task:', await response.text())
+    } else {
+      const data = await response.json()
+      console.log('Research task started:', data.task_id)
+    }
+  } catch (error) {
+    console.error('Error starting research task:', error)
+  }
+}
+
 export function useChat(initialSessionId?: string | null) {
   const [messages, setMessages] = useState<Message[]>([])
   const [isStreaming, setIsStreaming] = useState(false)
@@ -82,6 +135,13 @@ export function useChat(initialSessionId?: string | null) {
               // Ignore JSON parse errors for malformed data
             }
           }
+        }
+      }
+      // After streaming completes, check for research task commands
+      if (assistantContent && sessionId) {
+        const researchTasks = detectResearchTasks(assistantContent)
+        for (const task of researchTasks) {
+          await startResearchTask(sessionId, task)
         }
       }
     } catch (error) {

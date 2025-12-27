@@ -8,4 +8,6 @@ dependencies = [
     "claude-agent-sdk>=0.1.11",
     "pydantic>=2.12.5",
     "python-dotenv>=1.2.1",
+    "sqlalchemy[asyncio]>=2.0",
+    "aiosqlite>=0.19",
 ]
