@@ -1,6 +1,7 @@
 .logs/
 .venv/
 .sessions/
+.data/
 output/
 .env
 .env.local

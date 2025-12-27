@@ -28,16 +28,23 @@ PROJECT_ROOT = Path(__file__).parent.parent.parent
 
 # Default paths
 DEFAULT_SANDBOX = str(PROJECT_ROOT / "output")
-SESSIONS_DIR = PROJECT_ROOT / ".sessions"
+DATA_DIR = PROJECT_ROOT / ".data"
 LOGS_DIR = PROJECT_ROOT / ".logs"
 
-# Ensure output directory exists
+# Ensure directories exist
 Path(DEFAULT_SANDBOX).mkdir(exist_ok=True)
+DATA_DIR.mkdir(exist_ok=True)
 
-# Global config (set by parse_args)
+
+def get_database_url() -> str:
+    """Get database URL from env or default to SQLite."""
+    return os.getenv("DATABASE_URL", f"sqlite:///{DATA_DIR}/research.db")
+
+
+# Global config
 CONFIG = {
     "output_dir": DEFAULT_SANDBOX,
-    "session_file": None,
+    "data_dir": str(DATA_DIR),
 }
 
 

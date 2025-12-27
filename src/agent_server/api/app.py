@@ -10,7 +10,24 @@ from starlette.middleware import Middleware
 from starlette.middleware.cors import CORSMiddleware
 from starlette.responses import FileResponse
 
-from .routes import chat_stream, sessions_list, sessions_get, sessions_delete, health
+from agent_server.db import init_db, close_db
+from .routes import (
+    chat_stream,
+    sessions_list,
+    sessions_get,
+    sessions_delete,
+    health,
+    # Task endpoints
+    start_research_task,
+    get_task_status,
+    stream_task_updates,
+    cancel_task,
+    list_session_tasks,
+    # Output file endpoints
+    list_output_files,
+    get_output_file_content,
+    get_output_file_download,
+)
 
 # Development mode: enable CORS for Vite dev server
 DEV_MODE = os.getenv("DEV_MODE", "").lower() in ("1", "true", "yes")
@@ -39,6 +56,16 @@ def create_app() -> Starlette:
         Route("/api/sessions", sessions_list, methods=["GET"]),
         Route("/api/sessions/{session_id}", sessions_get, methods=["GET"]),
         Route("/api/sessions/{session_id}", sessions_delete, methods=["DELETE"]),
+        Route("/api/sessions/{session_id}/tasks", list_session_tasks, methods=["GET"]),
+        # Task management
+        Route("/api/tasks", start_research_task, methods=["POST"]),
+        Route("/api/tasks/{task_id}", get_task_status, methods=["GET"]),
+        Route("/api/tasks/{task_id}/stream", stream_task_updates, methods=["GET"]),
+        Route("/api/tasks/{task_id}/cancel", cancel_task, methods=["POST"]),
+        # Output files
+        Route("/api/outputs", list_output_files, methods=["GET"]),
+        Route("/api/outputs/{file_id}/content", get_output_file_content, methods=["GET"]),
+        Route("/api/outputs/{file_id}/download", get_output_file_download, methods=["GET"]),
     ]
 
     # Add static file serving if the directory exists
@@ -60,7 +87,12 @@ def create_app() -> Starlette:
             )
         )
 
-    return Starlette(routes=routes, middleware=middleware)
+    return Starlette(
+        routes=routes,
+        middleware=middleware,
+        on_startup=[init_db],
+        on_shutdown=[close_db],
+    )
 
 
 app = create_app()
