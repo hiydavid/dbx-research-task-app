@@ -1,20 +1,19 @@
+import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import { AppShell } from './components/layout/AppShell'
-import { ChatContainer } from './components/chat/ChatContainer'
-import { ResearchSidebar } from './components/research/ResearchSidebar'
+import { ProjectsPage } from './components/projects'
+import { ChatPage } from './components/chat/ChatPage'
 
 function App() {
   return (
-    <AppShell>
-      <div className="flex h-full">
-        {/* Main chat area */}
-        <div className="flex-1 flex flex-col">
-          <ChatContainer />
-        </div>
-
-        {/* Research sidebar (placeholder) */}
-        <ResearchSidebar />
-      </div>
-    </AppShell>
+    <BrowserRouter>
+      <AppShell>
+        <Routes>
+          <Route path="/" element={<ProjectsPage />} />
+          <Route path="/chat" element={<ChatPage />} />
+          <Route path="/chat/:sessionId" element={<ChatPage />} />
+        </Routes>
+      </AppShell>
+    </BrowserRouter>
   )
 }
 
