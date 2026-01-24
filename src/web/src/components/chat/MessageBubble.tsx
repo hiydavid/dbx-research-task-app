@@ -5,6 +5,8 @@ import { useMemo } from 'react'
 
 interface MessageBubbleProps {
   message: Message
+  isStreaming?: boolean
+  isLastMessage?: boolean
 }
 
 interface ResearchTaskBlock {
@@ -91,8 +93,9 @@ function ResearchTaskCard({ task }: { task: ResearchTaskBlock }) {
   )
 }
 
-export function MessageBubble({ message }: MessageBubbleProps) {
+export function MessageBubble({ message, isStreaming = false, isLastMessage = false }: MessageBubbleProps) {
   const isUser = message.role === 'user'
+  const showTypingIndicator = !isUser && message.content === '' && isStreaming && isLastMessage
 
   // Parse assistant messages to detect research task blocks
   const parsedContent = useMemo(() => {
@@ -120,13 +123,21 @@ export function MessageBubble({ message }: MessageBubbleProps) {
             : 'bg-muted'
         )}
       >
-        {parsedContent.map((part, index) => (
-          part.type === 'text' ? (
-            <p key={index} className="text-sm whitespace-pre-wrap">{part.content}</p>
-          ) : (
-            <ResearchTaskCard key={index} task={part.task} />
-          )
-        ))}
+        {showTypingIndicator ? (
+          <div className="flex items-center gap-1 py-1">
+            <span className="w-2 h-2 bg-muted-foreground/60 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+            <span className="w-2 h-2 bg-muted-foreground/60 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+            <span className="w-2 h-2 bg-muted-foreground/60 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+          </div>
+        ) : (
+          parsedContent.map((part, index) => (
+            part.type === 'text' ? (
+              <p key={index} className="text-sm whitespace-pre-wrap">{part.content}</p>
+            ) : (
+              <ResearchTaskCard key={index} task={part.task} />
+            )
+          ))
+        )}
       </div>
     </div>
   )
