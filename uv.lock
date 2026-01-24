@@ -240,13 +240,15 @@ wheels = [
 [[package]]
 name = "dbx-research-task-app"
 version = "0.2.0"
-source = { virtual = "." }
+source = { editable = "." }
 dependencies = [
     { name = "aiosqlite" },
     { name = "claude-agent-sdk" },
     { name = "pydantic" },
     { name = "python-dotenv" },
     { name = "sqlalchemy", extra = ["asyncio"] },
+    { name = "starlette" },
+    { name = "uvicorn" },
 ]
 
 [package.metadata]
@@ -256,6 +258,8 @@ requires-dist = [
     { name = "pydantic", specifier = ">=2.12.5" },
     { name = "python-dotenv", specifier = ">=1.2.1" },
     { name = "sqlalchemy", extras = ["asyncio"], specifier = ">=2.0" },
+    { name = "starlette", specifier = ">=0.45.0" },
+    { name = "uvicorn", specifier = ">=0.34.0" },
 ]
 
 [[package]]
