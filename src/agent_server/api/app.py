@@ -96,3 +96,16 @@ def create_app() -> Starlette:
 
 
 app = create_app()
+
+
+def dev():
+    """Run the development server."""
+    import uvicorn
+
+    os.environ.setdefault("DEV_MODE", "true")
+    uvicorn.run(
+        "agent_server.api.app:app",
+        host="0.0.0.0",
+        port=8000,
+        reload=True,
+    )

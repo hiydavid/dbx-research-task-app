@@ -7,7 +7,8 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 
-load_dotenv()
+load_dotenv(".env.local")
+load_dotenv()  # Also load .env as fallback
 
 # Model shorthand mapping to full model IDs
 MODEL_MAP = {
