@@ -74,6 +74,17 @@ export function useOutputFiles(sessionId: string | null) {
     fetchFiles()
   }, [fetchFiles])
 
+  // Poll for new files every 5 seconds when sessionId is set
+  useEffect(() => {
+    if (!sessionId) return
+
+    const interval = setInterval(() => {
+      fetchFiles()
+    }, 5000)
+
+    return () => clearInterval(interval)
+  }, [sessionId, fetchFiles])
+
   return {
     files,
     isLoading,

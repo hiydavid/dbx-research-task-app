@@ -144,6 +144,17 @@ export function useTasks(sessionId: string | null) {
     fetchTasks()
   }, [fetchTasks])
 
+  // Poll for task updates every 4 seconds when sessionId is set
+  useEffect(() => {
+    if (!sessionId) return
+
+    const interval = setInterval(() => {
+      fetchTasks()
+    }, 4000)
+
+    return () => clearInterval(interval)
+  }, [sessionId, fetchTasks])
+
   // Cleanup event source on unmount
   useEffect(() => {
     return () => {

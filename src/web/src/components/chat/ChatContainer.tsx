@@ -58,7 +58,7 @@ export function ChatContainer({ sessionId, onSessionChange }: ChatContainerProps
     <div className="flex flex-col h-full">
       <ScrollArea className="flex-1 p-4">
         <div className="max-w-3xl mx-auto">
-          <MessageList messages={messages} />
+          <MessageList messages={messages} isStreaming={isStreaming} />
           {currentToolUse && <ToolIndicator toolName={currentToolUse} />}
           <div ref={scrollRef} />
         </div>

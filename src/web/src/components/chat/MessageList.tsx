@@ -3,9 +3,10 @@ import { MessageBubble } from './MessageBubble'
 
 interface MessageListProps {
   messages: Message[]
+  isStreaming?: boolean
 }
 
-export function MessageList({ messages }: MessageListProps) {
+export function MessageList({ messages, isStreaming = false }: MessageListProps) {
   if (messages.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center h-full text-center p-8">
@@ -21,7 +22,12 @@ export function MessageList({ messages }: MessageListProps) {
   return (
     <div className="space-y-2">
       {messages.map((message, index) => (
-        <MessageBubble key={index} message={message} />
+        <MessageBubble
+          key={index}
+          message={message}
+          isStreaming={isStreaming}
+          isLastMessage={index === messages.length - 1}
+        />
       ))}
     </div>
   )
