@@ -27,6 +27,13 @@ export class ChatPage {
 
   async createNewChat() {
     await this.page.goto('/');
+    const startResearchButton = this.page.getByRole('button', {
+      name: 'Start Research Task',
+    });
+    if (await startResearchButton.isVisible().catch(() => false)) {
+      await startResearchButton.click();
+      await this.page.waitForURL(/\/chat\/[0-9a-f-]+$/);
+    }
   }
 
   public getCurrentURL(): string {
@@ -55,7 +62,9 @@ export class ChatPage {
 
   async sendUserMessageFromSuggestion() {
     await this.page
-      .getByRole('button', { name: 'How can you help me?' })
+      .getByTestId('suggested-actions')
+      .getByRole('button')
+      .first()
       .click();
   }
 

@@ -13,7 +13,25 @@ import {
 import { drizzle } from 'drizzle-orm/postgres-js';
 import postgres from 'postgres';
 
-import { chat, message, type DBMessage, type Chat } from './schema';
+import {
+  chat,
+  message,
+  researchPlan,
+  researchProject,
+  researchRun,
+  researchRunEvent,
+  type DBMessage,
+  type Chat,
+  type ResearchPlan,
+  type ResearchPlanStatus,
+  type ResearchProject,
+  type ResearchProjectStatus,
+  type ResearchRun,
+  type ResearchRunEvent,
+  type ResearchRunEventLevel,
+  type ResearchRunStage,
+  type ResearchRunStatus,
+} from './schema';
 import type { VisibilityType } from '@chat-template/utils';
 import { ChatSDKError } from '@chat-template/core/errors';
 import type { LanguageModelV3Usage } from '@ai-sdk/provider';
@@ -415,4 +433,444 @@ export async function updateChatLastContextById({
     console.warn('Failed to update lastContext for chat', chatId, error);
     return;
   }
+}
+
+function requireResearchPersistence(operation: string) {
+  if (!isDatabaseAvailable()) {
+    throw new ChatSDKError(
+      'bad_request:database',
+      `${operation} requires database persistence to be enabled.`,
+    );
+  }
+}
+
+export type ResearchProjectListItem = {
+  project: ResearchProject;
+  chatTitle: string;
+  chatId: string;
+};
+
+export async function createResearchProject({
+  id,
+  chatId,
+  userId,
+  status = 'planning',
+}: {
+  id: string;
+  chatId: string;
+  userId: string;
+  status?: ResearchProjectStatus;
+}) {
+  requireResearchPersistence('createResearchProject');
+  const now = new Date();
+
+  const [createdProject] = await (await ensureDb())
+    .insert(researchProject)
+    .values({
+      id,
+      chatId,
+      userId,
+      status,
+      createdAt: now,
+      updatedAt: now,
+    })
+    .returning();
+
+  return createdProject ?? null;
+}
+
+export async function getResearchProjectById({
+  id,
+}: {
+  id: string;
+}): Promise<ResearchProject | null> {
+  requireResearchPersistence('getResearchProjectById');
+  const [project] = await (await ensureDb())
+    .select()
+    .from(researchProject)
+    .where(eq(researchProject.id, id))
+    .limit(1);
+
+  return project ?? null;
+}
+
+export async function getResearchProjectByChatId({
+  chatId,
+}: {
+  chatId: string;
+}): Promise<ResearchProject | null> {
+  requireResearchPersistence('getResearchProjectByChatId');
+  const [project] = await (await ensureDb())
+    .select()
+    .from(researchProject)
+    .where(eq(researchProject.chatId, chatId))
+    .limit(1);
+
+  return project ?? null;
+}
+
+export async function getResearchProjectsByUserId({
+  userId,
+  limit = 50,
+}: {
+  userId: string;
+  limit?: number;
+}): Promise<ResearchProjectListItem[]> {
+  requireResearchPersistence('getResearchProjectsByUserId');
+  const rows = await (await ensureDb())
+    .select({
+      project: researchProject,
+      chatTitle: chat.title,
+      chatId: chat.id,
+    })
+    .from(researchProject)
+    .innerJoin(chat, eq(researchProject.chatId, chat.id))
+    .where(eq(researchProject.userId, userId))
+    .orderBy(desc(researchProject.createdAt))
+    .limit(limit);
+
+  return rows;
+}
+
+export async function updateResearchProject({
+  projectId,
+  status,
+  activeRunId,
+}: {
+  projectId: string;
+  status?: ResearchProjectStatus;
+  activeRunId?: string | null;
+}) {
+  requireResearchPersistence('updateResearchProject');
+  const [updatedProject] = await (await ensureDb())
+    .update(researchProject)
+    .set({
+      ...(status !== undefined ? { status } : {}),
+      ...(activeRunId !== undefined ? { activeRunId } : {}),
+      updatedAt: new Date(),
+    })
+    .where(eq(researchProject.id, projectId))
+    .returning();
+
+  return updatedProject ?? null;
+}
+
+export async function createResearchPlanVersion({
+  projectId,
+  scopeJson,
+  planJson,
+  planMarkdown,
+  status = 'draft',
+  approvedAt = null,
+}: {
+  projectId: string;
+  scopeJson: Record<string, unknown>;
+  planJson: Record<string, unknown>;
+  planMarkdown: string;
+  status?: ResearchPlanStatus;
+  approvedAt?: Date | null;
+}): Promise<ResearchPlan | null> {
+  requireResearchPersistence('createResearchPlanVersion');
+  const database = await ensureDb();
+  const now = new Date();
+
+  const [latestPlan] = await database
+    .select()
+    .from(researchPlan)
+    .where(eq(researchPlan.projectId, projectId))
+    .orderBy(desc(researchPlan.version))
+    .limit(1);
+
+  const nextVersion = (latestPlan?.version ?? 0) + 1;
+
+  await database
+    .update(researchPlan)
+    .set({
+      status: 'superseded',
+      updatedAt: now,
+    })
+    .where(
+      and(
+        eq(researchPlan.projectId, projectId),
+        inArray(researchPlan.status, ['draft', 'approved']),
+      ),
+    );
+
+  const [newPlan] = await database
+    .insert(researchPlan)
+    .values({
+      projectId,
+      version: nextVersion,
+      status,
+      scopeJson,
+      planJson,
+      planMarkdown,
+      approvedAt,
+      createdAt: now,
+      updatedAt: now,
+    })
+    .returning();
+
+  return newPlan ?? null;
+}
+
+export async function getLatestResearchPlanByProjectId({
+  projectId,
+}: {
+  projectId: string;
+}): Promise<ResearchPlan | null> {
+  requireResearchPersistence('getLatestResearchPlanByProjectId');
+  const [plan] = await (await ensureDb())
+    .select()
+    .from(researchPlan)
+    .where(eq(researchPlan.projectId, projectId))
+    .orderBy(desc(researchPlan.version))
+    .limit(1);
+
+  return plan ?? null;
+}
+
+export async function getResearchPlanByProjectIdAndVersion({
+  projectId,
+  version,
+}: {
+  projectId: string;
+  version: number;
+}): Promise<ResearchPlan | null> {
+  requireResearchPersistence('getResearchPlanByProjectIdAndVersion');
+  const [plan] = await (await ensureDb())
+    .select()
+    .from(researchPlan)
+    .where(
+      and(eq(researchPlan.projectId, projectId), eq(researchPlan.version, version)),
+    )
+    .limit(1);
+
+  return plan ?? null;
+}
+
+export async function approveLatestResearchPlanByProjectId({
+  projectId,
+}: {
+  projectId: string;
+}): Promise<ResearchPlan | null> {
+  requireResearchPersistence('approveLatestResearchPlanByProjectId');
+  const database = await ensureDb();
+
+  const [latestPlan] = await database
+    .select()
+    .from(researchPlan)
+    .where(eq(researchPlan.projectId, projectId))
+    .orderBy(desc(researchPlan.version))
+    .limit(1);
+
+  if (!latestPlan) {
+    return null;
+  }
+
+  const now = new Date();
+
+  await database
+    .update(researchPlan)
+    .set({
+      status: 'superseded',
+      updatedAt: now,
+    })
+    .where(
+      and(
+        eq(researchPlan.projectId, projectId),
+        inArray(researchPlan.status, ['draft', 'approved']),
+      ),
+    );
+
+  const [approvedPlan] = await database
+    .update(researchPlan)
+    .set({
+      status: 'approved',
+      approvedAt: now,
+      updatedAt: now,
+    })
+    .where(eq(researchPlan.id, latestPlan.id))
+    .returning();
+
+  return approvedPlan ?? null;
+}
+
+export async function createResearchRun({
+  id,
+  projectId,
+  planVersion,
+  status = 'queued',
+}: {
+  id: string;
+  projectId: string;
+  planVersion: number;
+  status?: ResearchRunStatus;
+}): Promise<ResearchRun | null> {
+  requireResearchPersistence('createResearchRun');
+  const now = new Date();
+
+  const [run] = await (await ensureDb())
+    .insert(researchRun)
+    .values({
+      id,
+      projectId,
+      planVersion,
+      status,
+      cancellationRequested: false,
+      createdAt: now,
+      updatedAt: now,
+    })
+    .returning();
+
+  return run ?? null;
+}
+
+export async function getResearchRunById({
+  runId,
+}: {
+  runId: string;
+}): Promise<ResearchRun | null> {
+  requireResearchPersistence('getResearchRunById');
+  const [run] = await (await ensureDb())
+    .select()
+    .from(researchRun)
+    .where(eq(researchRun.id, runId))
+    .limit(1);
+
+  return run ?? null;
+}
+
+export async function getLatestResearchRunByProjectId({
+  projectId,
+}: {
+  projectId: string;
+}): Promise<ResearchRun | null> {
+  requireResearchPersistence('getLatestResearchRunByProjectId');
+  const [run] = await (await ensureDb())
+    .select()
+    .from(researchRun)
+    .where(eq(researchRun.projectId, projectId))
+    .orderBy(desc(researchRun.createdAt))
+    .limit(1);
+
+  return run ?? null;
+}
+
+export async function updateResearchRun({
+  runId,
+  status,
+  cancellationRequested,
+  finalMarkdown,
+  errorText,
+  startedAt,
+  endedAt,
+}: {
+  runId: string;
+  status?: ResearchRunStatus;
+  cancellationRequested?: boolean;
+  finalMarkdown?: string | null;
+  errorText?: string | null;
+  startedAt?: Date | null;
+  endedAt?: Date | null;
+}): Promise<ResearchRun | null> {
+  requireResearchPersistence('updateResearchRun');
+  const [updatedRun] = await (await ensureDb())
+    .update(researchRun)
+    .set({
+      ...(status !== undefined ? { status } : {}),
+      ...(cancellationRequested !== undefined
+        ? { cancellationRequested }
+        : {}),
+      ...(finalMarkdown !== undefined ? { finalMarkdown } : {}),
+      ...(errorText !== undefined ? { errorText } : {}),
+      ...(startedAt !== undefined ? { startedAt } : {}),
+      ...(endedAt !== undefined ? { endedAt } : {}),
+      updatedAt: new Date(),
+    })
+    .where(eq(researchRun.id, runId))
+    .returning();
+
+  return updatedRun ?? null;
+}
+
+export async function requestResearchRunCancellation({
+  runId,
+}: {
+  runId: string;
+}): Promise<ResearchRun | null> {
+  requireResearchPersistence('requestResearchRunCancellation');
+  const run = await getResearchRunById({ runId });
+  if (!run) {
+    return null;
+  }
+
+  const nextStatus: ResearchRunStatus =
+    run.status === 'queued' || run.status === 'running'
+      ? 'cancel_requested'
+      : run.status;
+
+  return updateResearchRun({
+    runId,
+    status: nextStatus,
+    cancellationRequested: true,
+  });
+}
+
+export async function appendResearchRunEvent({
+  runId,
+  stage,
+  level = 'info',
+  message: runMessage,
+  payload,
+}: {
+  runId: string;
+  stage: ResearchRunStage;
+  level?: ResearchRunEventLevel;
+  message: string;
+  payload?: Record<string, unknown>;
+}): Promise<ResearchRunEvent | null> {
+  requireResearchPersistence('appendResearchRunEvent');
+  const database = await ensureDb();
+
+  const [lastEvent] = await database
+    .select()
+    .from(researchRunEvent)
+    .where(eq(researchRunEvent.runId, runId))
+    .orderBy(desc(researchRunEvent.seq))
+    .limit(1);
+
+  const [event] = await database
+    .insert(researchRunEvent)
+    .values({
+      runId,
+      seq: (lastEvent?.seq ?? 0) + 1,
+      stage,
+      level,
+      message: runMessage,
+      payload,
+      createdAt: new Date(),
+    })
+    .returning();
+
+  return event ?? null;
+}
+
+export async function getResearchRunEventsByRunId({
+  runId,
+  afterSeq,
+}: {
+  runId: string;
+  afterSeq?: number;
+}): Promise<ResearchRunEvent[]> {
+  requireResearchPersistence('getResearchRunEventsByRunId');
+  return (await ensureDb())
+    .select()
+    .from(researchRunEvent)
+    .where(
+      afterSeq !== undefined
+        ? and(eq(researchRunEvent.runId, runId), gt(researchRunEvent.seq, afterSeq))
+        : eq(researchRunEvent.runId, runId),
+    )
+    .orderBy(asc(researchRunEvent.seq));
 }

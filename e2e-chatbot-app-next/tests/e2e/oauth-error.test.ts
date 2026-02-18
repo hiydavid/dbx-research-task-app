@@ -59,8 +59,8 @@ Error: Credential for user identity('user@example.com') is not found for the con
       document.body.appendChild(container);
     });
 
-    // Navigate to a page where React is loaded
-    await page.goto('/');
+    // Navigate to a research chat page where React is loaded
+    await chatPage.createNewChat();
 
     // Wait for the app to load
     await expect(page.getByTestId('multimodal-input')).toBeVisible();
@@ -76,7 +76,7 @@ Error: Credential for user identity('user@example.com') is not found for the con
     // The actual rendering is tested through the data-error parts when they occur
 
     // Navigate to app
-    await page.goto('/');
+    await chatPage.createNewChat();
     await expect(page.getByTestId('multimodal-input')).toBeVisible();
 
     // Send a message to create a chat

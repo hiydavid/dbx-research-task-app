@@ -16,8 +16,8 @@ interface SuggestedActionsProps {
 function PureSuggestedActions({ chatId, sendMessage }: SuggestedActionsProps) {
   const { chatHistoryEnabled } = useAppConfig();
   const suggestedActions = [
-    'How can you help me?',
-    'Tell me something I might not know',
+    'Help me define the scope for a market landscape research project.',
+    'Plan a research task to compare product adoption across regions.',
   ];
 
   return (

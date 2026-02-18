@@ -25,3 +25,27 @@ export interface Attachment {
 }
 
 export type { VisibilityType } from '@chat-template/utils';
+
+export type ResearchRunStage =
+  | 'queued'
+  | 'analyzing'
+  | 'researching'
+  | 'synthesizing'
+  | 'finalizing';
+
+export type ResearchRunEventLevel = 'info' | 'warning' | 'error';
+
+export interface ResearchScope {
+  title: string;
+  objective: string;
+  keyQuestions: string[];
+  methodology: string;
+  deliverables: string[];
+  constraints: string[];
+  assumptions: string[];
+  acceptanceCriteria: string[];
+}
+
+export interface ResearchPlanArtifact extends ResearchScope {
+  readyForApproval: boolean;
+}

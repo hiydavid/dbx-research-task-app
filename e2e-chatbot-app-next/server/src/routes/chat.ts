@@ -59,6 +59,7 @@ import {
   CONTEXT_HEADER_USER_ID,
 } from '@chat-template/core';
 import { ChatSDKError } from '@chat-template/core/errors';
+import { syncResearchPlanFromChat } from '../research/planner';
 
 export const chatRouter: RouterType = Router();
 
@@ -289,6 +290,15 @@ chatRouter.post('/', requireAuth, async (req: Request, res: Response) => {
           } catch (err) {
             console.warn('Unable to persist last usage for chat', id, err);
           }
+        }
+
+        try {
+          await syncResearchPlanFromChat({
+            chatId: id,
+            userId: session.user.id,
+          });
+        } catch (err) {
+          console.warn('Unable to sync research plan for chat', id, err);
         }
 
         streamCache.clearActiveStream(id);

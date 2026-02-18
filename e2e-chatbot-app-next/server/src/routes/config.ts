@@ -13,9 +13,11 @@ export const configRouter: RouterType = Router();
  * Returns feature flags based on environment configuration
  */
 configRouter.get('/', (_req: Request, res: Response) => {
+  const databaseEnabled = isDatabaseAvailable();
   res.json({
     features: {
-      chatHistory: isDatabaseAvailable(),
+      chatHistory: databaseEnabled,
+      researchWorkflow: databaseEnabled,
     },
   });
 });

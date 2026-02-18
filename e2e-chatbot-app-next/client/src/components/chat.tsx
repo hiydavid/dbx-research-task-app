@@ -24,6 +24,7 @@ import { ChatTransport } from '../lib/ChatTransport';
 import type { ClientSession } from '@chat-template/auth';
 import { softNavigateToChatId } from '@/lib/navigation';
 import { useAppConfig } from '@/contexts/AppConfigContext';
+import { ResearchPanel } from './research-panel';
 
 export function Chat({
   id,
@@ -277,37 +278,47 @@ export function Chat({
 
   return (
     <>
-      <div className="overscroll-behavior-contain flex h-dvh min-w-0 touch-pan-y flex-col bg-background">
-        <ChatHeader />
+      <div className="flex h-dvh min-w-0 bg-background">
+        <div className="overscroll-behavior-contain flex min-w-0 flex-1 touch-pan-y flex-col">
+          <ChatHeader />
 
-        <Messages
-          chatId={id}
-          status={status}
-          messages={messages}
-          setMessages={setMessages}
-          addToolApprovalResponse={addToolApprovalResponse}
-          regenerate={regenerate}
-          sendMessage={sendMessage}
-          isReadonly={isReadonly}
-          selectedModelId={initialChatModel}
-        />
+          <Messages
+            chatId={id}
+            status={status}
+            messages={messages}
+            setMessages={setMessages}
+            addToolApprovalResponse={addToolApprovalResponse}
+            regenerate={regenerate}
+            sendMessage={sendMessage}
+            isReadonly={isReadonly}
+            selectedModelId={initialChatModel}
+          />
 
-        <div className="sticky bottom-0 z-1 mx-auto flex w-full max-w-4xl gap-2 border-t-0 bg-background px-2 pb-3 md:px-4 md:pb-4">
-          {!isReadonly && (
-            <MultimodalInput
-              chatId={id}
-              input={input}
-              setInput={setInput}
-              status={status}
-              stop={stop}
-              attachments={attachments}
-              setAttachments={setAttachments}
-              messages={messages}
-              setMessages={setMessages}
-              sendMessage={sendMessage}
-              selectedVisibilityType={visibilityType}
-            />
-          )}
+          <div className="sticky bottom-0 z-1 mx-auto flex w-full max-w-4xl gap-2 border-t-0 bg-background px-2 pb-3 md:px-4 md:pb-4">
+            {!isReadonly && (
+              <MultimodalInput
+                chatId={id}
+                input={input}
+                setInput={setInput}
+                status={status}
+                stop={stop}
+                attachments={attachments}
+                setAttachments={setAttachments}
+                messages={messages}
+                setMessages={setMessages}
+                sendMessage={sendMessage}
+                selectedVisibilityType={visibilityType}
+              />
+            )}
+          </div>
+        </div>
+        <div className="hidden w-[380px] lg:block">
+          <ResearchPanel chatId={id} />
+        </div>
+      </div>
+      <div className="border-t bg-background lg:hidden">
+        <div className="h-[42vh]">
+          <ResearchPanel chatId={id} />
         </div>
       </div>
     </>

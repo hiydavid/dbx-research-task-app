@@ -33,7 +33,7 @@ export function ChatHeader() {
           }}
         >
           <PlusIcon />
-          <span className="md:sr-only">New Chat</span>
+          <span className="md:sr-only">New Research Task</span>
         </Button>
       )}
 

@@ -211,8 +211,8 @@ export function SidebarHistory({ user }: { user?: ClientUser | null }) {
         <SidebarGroupContent>
           <div className="flex w-full flex-row items-center justify-center gap-2 px-2 text-sm text-zinc-500">
             {chatHistoryEnabled
-              ? 'Your conversations will appear here once you start chatting!'
-              : 'Chat history is disabled - conversations are not saved'}
+              ? 'Your research tasks will appear here once you create one.'
+              : 'History is disabled - research tasks are not saved'}
           </div>
         </SidebarGroupContent>
       </SidebarGroup>
@@ -348,14 +348,14 @@ export function SidebarHistory({ user }: { user?: ClientUser | null }) {
 
           {hasReachedEnd ? (
             <div className="mt-8 flex w-full flex-row items-center justify-center gap-2 px-2 text-sm text-zinc-500">
-              You have reached the end of your chat history.
+              You have reached the end of your research task history.
             </div>
           ) : (
             <div className="mt-8 flex flex-row items-center gap-2 p-2 text-zinc-500 dark:text-zinc-400">
               <div className="animate-spin">
                 <LoaderIcon />
               </div>
-              <div>Loading Chats...</div>
+              <div>Loading Research Tasks...</div>
             </div>
           )}
         </SidebarGroupContent>
