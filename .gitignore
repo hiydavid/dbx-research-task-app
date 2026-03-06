@@ -1,5 +1,3 @@
-.codex/
-
 # Created by https://www.toptal.com/developers/gitignore/api/python
 # Edit at https://www.toptal.com/developers/gitignore?templates=python
 
@@ -217,6 +215,8 @@ sketch
 !.claude/skills/run-locally/
 !.claude/skills/modify-agent/
 !.claude/skills/migrate-from-model-serving/
+!.claude/skills/agent-memory/
+!.claude/skills/lakebase-setup/
 
 **/.env
 **/.env.local

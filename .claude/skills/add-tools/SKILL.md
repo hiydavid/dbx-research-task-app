@@ -5,6 +5,8 @@ description: "Add tools to your agent and grant required permissions in databric
 
 # Add Tools & Grant Permissions
 
+> **Profile reminder:** All `databricks` CLI commands must include the profile from `.env`: `databricks <command> --profile <profile>`
+
 **After adding any MCP server to your agent, you MUST grant the app access in `databricks.yml`.**
 
 Without this, you'll get permission errors when the agent tries to use the resource.
@@ -31,7 +33,7 @@ agent = Agent(
 ```yaml
 resources:
   apps:
-    agent_openai_agents_sdk:
+    agent_openai_agents_sdk_long_running_agent:
       resources:
         - name: 'my_genie_space'
           genie_space:
@@ -48,7 +50,7 @@ See the `examples/` directory for complete YAML snippets:
 
 | File | Resource Type | When to Use |
 |------|--------------|-------------|
-| `uc-function.yaml` | Unity Catalog function | UC functions via MCP |
+| `uc-function.yaml` | Unity Catalog function | UC functions |
 | `uc-connection.yaml` | UC connection | External MCP servers |
 | `vector-search.yaml` | Vector search index | RAG applications |
 | `sql-warehouse.yaml` | SQL warehouse | SQL execution |
@@ -69,8 +71,7 @@ databricks apps get <your-agent-app-name> --output json | jq -r '.service_princi
 **Step 2:** Grant permission on the MCP server app:
 ```bash
 databricks apps update-permissions <mcp-server-app-name> \
-  --service-principal <agent-app-service-principal> \
-  --permission-level CAN_USE
+  --json '{"access_control_list": [{"service_principal_name": "<agent-app-service-principal>", "permission_level": "CAN_USE"}]}'
 ```
 
 See `examples/custom-mcp-server.md` for detailed steps.

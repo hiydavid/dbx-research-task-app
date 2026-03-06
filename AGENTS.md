@@ -12,12 +12,29 @@
 2. **If the user mentions memory, conversation history, or persistence:**
    > "For memory capabilities, do you have an existing Lakebase instance? If so, what's the instance name?"
 
-**Then check authentication status by running `databricks auth profiles`.**
+**Then check authentication and profile configuration:**
 
-This helps you understand:
-- Which Databricks profiles are configured
-- Whether authentication is already set up
-- Which profile to use for subsequent commands
+1. Read the `.env` file to find `DATABRICKS_CONFIG_PROFILE` (e.g., `dev`)
+2. Run `databricks auth profiles` to verify the profile is configured and valid
+
+**CRITICAL: All `databricks` CLI commands must include the profile from `.env`.** Either use `--profile` or set the env var:
+
+```bash
+databricks <command> --profile <profile>
+# or
+DATABRICKS_CONFIG_PROFILE=<profile> databricks <command>
+```
+
+For example, if `.env` has `DATABRICKS_CONFIG_PROFILE=dev`:
+```bash
+databricks bundle deploy --profile dev
+databricks bundle run <bundle_name> --profile dev
+databricks apps get <app-name> --profile dev
+databricks apps logs <app-name> --follow --profile dev
+databricks auth token --profile dev
+```
+
+> **Why this matters:** Without the profile, the CLI may target the wrong workspace, causing "not found" errors for experiments, apps, or other resources.
 
 If no profiles exist or `.env` is missing, guide the user through running `uv run quickstart` to set up authentication and configuration. See the **quickstart** skill for details.
 
@@ -34,6 +51,20 @@ If no profiles exist or `.env` is missing, guide the user through running `uv ru
 3. **Any specific Databricks resources they want to connect?**
 
 Use `uv run discover-tools` to show them available resources in their workspace, then help them select the right ones for their use case. **See the `add-tools` skill for how to connect tools and grant permissions.**
+
+## Granting Lakebase Permissions
+
+After deploying, grant the app's SP Postgres-level permissions to access Lakebase tables. Get the SP client ID then run the grant script:
+
+```bash
+# Get SP client ID
+databricks apps get <app-name> --profile <profile> --output json | jq -r '.service_principal_client_id'
+
+# Grant all permissions (reads LAKEBASE_INSTANCE_NAME from .env)
+DATABRICKS_CONFIG_PROFILE=<profile> uv run python scripts/grant_lakebase_permissions.py <sp-client-id>
+```
+
+This grants permissions on the `agent_server`, `ai_chatbot`, and `drizzle` schemas and their tables.
 
 ## Handling Deployment Errors
 
@@ -70,7 +101,8 @@ Ask the user: "I see there's an existing app with the same name. Would you like 
 | Setup | `uv run quickstart` |
 | Discover tools | `uv run discover-tools` |
 | Run locally | `uv run start-app` |
-| Deploy | `databricks bundle deploy && databricks bundle run agent_openai_agents_sdk` |
+| Deploy | `databricks bundle deploy --profile <profile> && databricks bundle run agent_openai_agents_sdk_long_running_agent --profile <profile>` |
+| Grant Lakebase perms | `DATABRICKS_CONFIG_PROFILE=<profile> uv run python scripts/grant_lakebase_permissions.py <sp-client-id>` |
 | View logs | `databricks apps logs <app-name> --follow` |
 
 ---
@@ -85,6 +117,7 @@ Ask the user: "I see there's an existing app with the same name. Would you like 
 | `databricks.yml` | Bundle config & resource permissions |
 | `scripts/quickstart.py` | One-command setup script |
 | `scripts/discover_tools.py` | Discovers available workspace resources |
+| `scripts/grant_lakebase_permissions.py` | Grants Lakebase Postgres permissions to app SP |
 
 ---
 
